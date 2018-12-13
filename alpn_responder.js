@@ -1,4 +1,4 @@
-/* LECert Example ALPN Responder */
+/* ACMECert Example ALPN Responder */
 var tls=require('tls');
 var fs=require('fs');
 
@@ -12,13 +12,13 @@ var server=tls.createServer({
 		console.log(arguments);
 	});
 }).on('listening',function(){
-	console.log('LECert Example ALPN Responder - Ready');
+	console.log('ACMECert Example ALPN Responder - Ready');
 }).listen(443);
 
 process.stdin.resume();
 process.stdin.on('end',function(){
   server.close(function () {
-    console.log('LECert Example ALPN Responder - Terminating');
+    console.log('ACMECert Example ALPN Responder - Terminating');
 		process.exit(0);
   });
 });

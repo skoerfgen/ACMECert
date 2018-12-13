@@ -1,23 +1,23 @@
-# LECert
+# ACMECert
 
 A [Let's Encrypt](https://letsencrypt.org/) ([ACME v2](https://ietf-wg-acme.github.io/acme/draft-ietf-acme-acme.html)) PHP client library. (~ 600 lines of code)
 
 ## Description
 
-LECert is designed to help you to setup an automated SSL/TLS-certificate/renewal process
+ACMECert is designed to help you to setup an automated SSL/TLS-certificate/renewal process
 with a few lines of PHP.
 
 It contains a set of functions allowing you to:
 
-- [generate RSA keys](#lecertgeneratersakey)
-- manage account: [register](#lecertregister)/[update](#lecertupdate)/[deactivate](#lecertdeactivateaccount) and [account key roll-over](#lecertkeychange)
-- [get](#lecertgetcertificatechain)/[revoke](#lecertrevoke) certificates
-- [parse certificates](#lecertparsecertificate) / get the [remaining days](#lecertgetremainingdays) a certificate is still valid
+- [generate RSA keys](#acmecertgeneratersakey)
+- manage account: [register](#acmecertregister)/[update](#acmecertupdate)/[deactivate](#acmecertdeactivateaccount) and [account key roll-over](#acmecertkeychange)
+- [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates
+- [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) a certificate is still valid
 > see [Function Reference](#function-reference) for a full list
 
 It abstacts away the complexity of the ACME protocol to get a certificate
 (create order, fetch authorizations, compute challenge tokens, polling for status, generate CSR,
-finalize order, request certificate) into a single function [getCertificateChain](#lecertgetcertificatechain),
+finalize order, request certificate) into a single function [getCertificateChain](#acmecertgetcertificatechain),
 where you specify a set of domains you want to get a certificate for and which challenge type to use (all challenge types are supported).
 This function takes as third argument a user-defined callback function which gets
 invoked every time a challenge needs to be fulfilled. It is up to you to set/remove the challenge tokens:
@@ -32,13 +32,13 @@ $handler=function($opts){
   };
 };
 
-$le->getCertificateChain(..., ..., $handler);
+$ac->getCertificateChain(..., ..., $handler);
 ```
-> see description of [getCertificateChain](#lecertgetcertificatechain) for details about the callback function.
+> see description of [getCertificateChain](#acmecertgetcertificatechain) for details about the callback function.
 >
 > also see the [Get Certificate](#get-certificate-using-http-01-challenge) examples below.
 
-Instead of returning `FALSE` on error, every function in LECert throws an [Exception](http://php.net/manual/en/class.exception.php)
+Instead of returning `FALSE` on error, every function in ACMECert throws an [Exception](http://php.net/manual/en/class.exception.php)
 if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded with an error message.
 
 ## Requirements
@@ -47,24 +47,24 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded 
 
 ## Usage Examples
 
-#### Require LECert
+#### Require ACMECert
 ```php
-require 'LECert.php';
+require 'ACMECert.php';
 ```
 
 #### Choose Live or Staging Environment
 > Live
 ```php
-$le=new LECert();
+$ac=new ACMECert();
 ```
 > Staging
 ```php
-$le=new LECert(false);
+$ac=new ACMECert(false);
 ```
 
 #### Generate RSA Private Key
 ```php
-$key=$le->generateRSAKey();
+$key=$ac->generateRSAKey();
 file_put_contents('account_key.pem',$key);
 ```
 > Equivalent to: `openssl genrsa 2048 -out account_key.pem`
@@ -72,8 +72,8 @@ file_put_contents('account_key.pem',$key);
 
 #### Register Account Key with Let's Encrypt
 ```php
-$le->loadAccountKey('file://account_key.pem');
-$ret=$le->register(true,'info@example.com');
+$ac->loadAccountKey('file://account_key.pem');
+$ret=$ac->register(true,'info@example.com');
 print_r($ret);
 ```
 
@@ -81,34 +81,34 @@ print_r($ret);
 
 #### Get Account Information
 ```php
-$le->loadAccountKey('file://account_key.pem');
-$ret=$le->getAccount();
+$ac->loadAccountKey('file://account_key.pem');
+$ret=$ac->getAccount();
 print_r($ret);
 ```
 
 #### Account Key Roll-over
 ```php
-$le->loadAccountKey('file://account_key.pem');
-$ret=$le->keyChange('file://new_account_key.pem');
+$ac->loadAccountKey('file://account_key.pem');
+$ret=$ac->keyChange('file://new_account_key.pem');
 print_r($ret);
 ```
 
 #### Deactivate Account
 ```php
-$le->loadAccountKey('file://account_key.pem');
-$ret=$le->deactivateAccount();
+$ac->loadAccountKey('file://account_key.pem');
+$ret=$ac->deactivateAccount();
 print_r($ret);
 ```
 
 #### Revoke Certificate
 ```php
-$le->loadAccountKey('file://account_key.pem');
-$le->revoke('file://fullchain.pem');
+$ac->loadAccountKey('file://account_key.pem');
+$ac->revoke('file://fullchain.pem');
 ```
 
 #### Get Remaining Days
 ```php
-$days=$le->getRemainingDays('file://fullchain.pem'); // certificate or certificate-chain
+$days=$ac->getRemainingDays('file://fullchain.pem'); // certificate or certificate-chain
 if ($days>30) { // renew 30 days before expiry
   die('Certificate still good, exiting..');
 }
@@ -118,7 +118,7 @@ if ($days>30) { // renew 30 days before expiry
 
 #### Get Certificate using `http-01` challenge
 ```php
-$le->loadAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://account_key.pem');
 
 $domain_config=array(
   'test1.example.com'=>array('challenge'=>'http-01','docroot'=>'/var/www/vhosts/test1.example.com'),
@@ -134,14 +134,14 @@ $handler=function($opts){
   };
 };
 
-$fullchain=$le->getCertificateChain('file://cert_private_key.pem',$domain_config,$handler);
+$fullchain=$ac->getCertificateChain('file://cert_private_key.pem',$domain_config,$handler);
 file_put_contents('fullchain.pem',$fullchain);
 ```
 
 
 #### Get Certificate using all (`http-01`,`dns-01` and `tls-alpn-01`) challenge types together
 ```php
-$le->loadAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://account_key.pem');
 
 $domain_config=array(
   'example.com'=>array('challenge'=>'http-01','docroot'=>'/var/www/vhosts/example.com'),
@@ -149,7 +149,7 @@ $domain_config=array(
   'test.example.org'=>array('challenge'=>'tls-alpn-01')
 );
 
-$handler=function($opts) use ($le){
+$handler=function($opts) use ($ac){
   switch($opts['config']['challenge']){
     case 'http-01': // automatic example: challenge directory/file is created..
       $fn=$opts['config']['docroot'].$opts['key'];
@@ -167,7 +167,7 @@ $handler=function($opts) use ($le){
       };
     break;
     case 'tls-alpn-01':
-      $cert=$le->generateALPNCertificate('file://some_private_key.pem',$opts['domain'],$opts['value']);
+      $cert=$ac->generateALPNCertificate('file://some_private_key.pem',$opts['domain'],$opts['value']);
       // Use $cert and some_private_key.pem(<- does not have to be a specific key,
       // just make sure you generated one) to serve the certificate for $opts['domain']
 
@@ -200,21 +200,21 @@ $handler=function($opts) use ($le){
 };
 
 // Example for using a pre-generated CSR as input to getCertificateChain instead of a private key:
-// $csr=$le->generateCSR('file://cert_private_key.pem',array_keys($domain_config));
-// $fullchain=$le->getCertificateChain($csr,$domain_config,$handler);
+// $csr=$ac->generateCSR('file://cert_private_key.pem',array_keys($domain_config));
+// $fullchain=$ac->getCertificateChain($csr,$domain_config,$handler);
 
-$fullchain=$le->getCertificateChain('file://cert_private_key.pem',$domain_config,$handler);
+$fullchain=$ac->getCertificateChain('file://cert_private_key.pem',$domain_config,$handler);
 file_put_contents('fullchain.pem',$fullchain);
 
 ```
 
 ## Logging
 
-LECert logs its actions using `error_log`, which logs messages to stderr per default in PHP CLI so it is easy to log to a file instead:
+ACMECert logs its actions using `error_log`, which logs messages to stderr per default in PHP CLI so it is easy to log to a file instead:
 ```php
 error_reporting(E_ALL);
 ini_set('log_errors',1);
-ini_set('error_log',dirname(__FILE__).'/LECert.log');
+ini_set('error_log',dirname(__FILE__).'/ACMECert.log');
 ```
 
 
@@ -227,11 +227,11 @@ If the ACME-Server reponded with an error message an `ACME_Exception` is thrown.
 Here an example:
 
 ```php
-require 'LECert.php';
-$le=new LECert();
-$le->setAccountKey('file://account_key.pem');
+require 'ACMECert.php';
+$ac=new ACMECert();
+$ac->setAccountKey('file://account_key.pem');
 try {
-  echo $le->getAccountID().PHP_EOL;
+  echo $ac->getAccountID().PHP_EOL;
 }catch(ACME_Exception $e){
   if ($e->getType()=='urn:ietf:params:acme:error:accountDoesNotExist'){
     echo 'Account does not exist'.PHP_EOL;
@@ -244,11 +244,11 @@ try {
 
 ## Function Reference
 
-### LECert::__construct
+### ACMECert::__construct
 
-Creates a new LECert instance.
+Creates a new ACMECert instance.
 ```php
-public LECert::__construct ( bool $live = TRUE )
+public ACMECert::__construct ( bool $live = TRUE )
 ```
 ###### Parameters
 > **`live`**
@@ -256,15 +256,15 @@ public LECert::__construct ( bool $live = TRUE )
 > When **FALSE**, the ACME v2 [staging environment](https://acme-staging-v02.api.letsencrypt.org/) is used otherwise the [live environment](https://acme-v02.api.letsencrypt.org/).
 
 ###### Return Values
-> Returns a new LECert instance.
+> Returns a new ACMECert instance.
 
 ---
 
-### LECert::generateRSAKey
+### ACMECert::generateRSAKey
 
 Generate RSA private key (used as account key or private key for a certificate).
 ```php
-public string LECert::generateRSAKey ( int $bits = 2048 )
+public string ACMECert::generateRSAKey ( int $bits = 2048 )
 ```
 ###### Parameters
 > **`bits`**
@@ -278,11 +278,11 @@ public string LECert::generateRSAKey ( int $bits = 2048 )
 
 ---
 
-### LECert::loadAccountKey
+### ACMECert::loadAccountKey
 
 Load account key.
 ```php
-public void LECert::loadAccountKey ( mixed $account_key_pem )
+public void ACMECert::loadAccountKey ( mixed $account_key_pem )
 ```
 ###### Parameters
 > **`account_key_pem`**
@@ -297,11 +297,11 @@ public void LECert::loadAccountKey ( mixed $account_key_pem )
 
 ---
 
-### LECert::register
+### ACMECert::register
 
 Associate the loaded account key with a Let's Encrypt account and optionally specify contacts.
 ```php
-public array LECert::register ( bool $termsOfServiceAgreed = FALSE [, mixed $contacts = array() ] )
+public array ACMECert::register ( bool $termsOfServiceAgreed = FALSE [, mixed $contacts = array() ] )
 ```
 ###### Parameters
 > **`termsOfServiceAgreed`**
@@ -322,11 +322,11 @@ public array LECert::register ( bool $termsOfServiceAgreed = FALSE [, mixed $con
 
 ---
 
-### LECert::update
+### ACMECert::update
 
 Update account contacts.
 ```php
-public array LECert::update ( mixed $contacts = array() )
+public array ACMECert::update ( mixed $contacts = array() )
 ```
 ###### Parameters
 > **`contacts`**
@@ -341,11 +341,11 @@ public array LECert::update ( mixed $contacts = array() )
 
 ---
 
-### LECert::getAccount
+### ACMECert::getAccount
 
 Get Account Information.
 ```php
-public array LECert::getAccount()
+public array ACMECert::getAccount()
 ```
 ###### Return Values
 > Returns an array containing the account information.
@@ -354,11 +354,11 @@ public array LECert::getAccount()
 
 ---
 
-### LECert::getAccountID
+### ACMECert::getAccountID
 
 Get Account ID.
 ```php
-public string LECert::getAccountID()
+public string ACMECert::getAccountID()
 ```
 ###### Return Values
 > Returns the Account ID
@@ -367,13 +367,13 @@ public string LECert::getAccountID()
 
 ---
 
-### LECert::keyChange
+### ACMECert::keyChange
 
 Account Key Roll-over (exchange the current account key with another one).
 
-> If the Account Key Roll-over succeeded, the new account key is automatically loaded via [`loadAccountKey`](#lecertloadaccountkey)
+> If the Account Key Roll-over succeeded, the new account key is automatically loaded via [`loadAccountKey`](#acmecertloadaccountkey)
 ```php
-public array LECert::keyChange ( mixed $new_account_key_pem )
+public array ACMECert::keyChange ( mixed $new_account_key_pem )
 ```
 ###### Parameters
 > **`new_account_key_pem`**
@@ -388,11 +388,11 @@ public array LECert::keyChange ( mixed $new_account_key_pem )
 
 ---
 
-### LECert::deactivateAccount
+### ACMECert::deactivateAccount
 
 Deactivate account.
 ```php
-public array LECert::deactivateAccount()
+public array ACMECert::deactivateAccount()
 ```
 ###### Return Values
 > Returns an array containing the account information.
@@ -401,13 +401,13 @@ public array LECert::deactivateAccount()
 
 ---
 
-### LECert::getCertificateChain
+### ACMECert::getCertificateChain
 
 Get certificate-chain (certificate + the intermediate certificate).
 
 *This is what Apache >= 2.4.8 needs for [`SSLCertificateFile`](https://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile), and what Nginx needs for [`ssl_certificate`](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate).*
 ```php
-public string LECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback )
+public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback )
 ```
 ###### Parameters
 > **`pem`**
@@ -474,7 +474,7 @@ public string LECert::getCertificateChain ( mixed $pem, array $domain_config, ca
 >> --- | --- | ---
 >> http-01 | path + filename | file contents
 >> dns-01 | TXT Resouce Record Name | TXT Resouce Record Value
->> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#lecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
+>> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
 
 ###### Return Values
 > Returns a PEM encoded certificate chain.
@@ -483,11 +483,11 @@ public string LECert::getCertificateChain ( mixed $pem, array $domain_config, ca
 
 ---
 
-### LECert::revoke
+### ACMECert::revoke
 
 Revoke certificate.
 ```php
-public void LECert::revoke ( mixed $pem )
+public void ACMECert::revoke ( mixed $pem )
 ```
 ###### Parameters
 > **`pem`**
@@ -504,11 +504,11 @@ public void LECert::revoke ( mixed $pem )
 
 ---
 
-### LECert::generateCSR
+### ACMECert::generateCSR
 
 Generate CSR for a set of domains.
 ```php
-public string LECert::generateCSR ( mixed $private_key, array $domains )
+public string ACMECert::generateCSR ( mixed $private_key, array $domains )
 ```
 ###### Parameters
 > **`private_key`**
@@ -527,11 +527,11 @@ public string LECert::generateCSR ( mixed $private_key, array $domains )
 
 ---
 
-### LECert::generateALPNCertificate
+### ACMECert::generateALPNCertificate
 
 Generate a self signed verification certificate containing the acmeIdentifier extension used in **`tls-alpn-01`** challenge.
 ```php
-public string LECert::generateALPNCertificate ( mixed $private_key, string $domain, string $token )
+public string ACMECert::generateALPNCertificate ( mixed $private_key, string $domain, string $token )
 ```
 ###### Parameters
 > **`private_key`**
@@ -556,11 +556,11 @@ public string LECert::generateALPNCertificate ( mixed $private_key, string $doma
 
 ---
 
-### LECert::parseCertificate
+### ACMECert::parseCertificate
 
 Get information about a certificate.
 ```php
-public array LECert::parseCertificate ( mixed $pem )
+public array ACMECert::parseCertificate ( mixed $pem )
 ```
 ###### Parameters
 > **`pem`**
@@ -575,11 +575,11 @@ public array LECert::parseCertificate ( mixed $pem )
 
 ---
 
-### LECert::getRemainingDays
+### ACMECert::getRemainingDays
 
 Get the number of days the certificate is still valid.
 ```php
-public float LECert::getRemainingDays ( mixed $pem )
+public float ACMECert::getRemainingDays ( mixed $pem )
 ```
 ###### Parameters
 > **`pem`**

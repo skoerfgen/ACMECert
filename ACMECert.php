@@ -24,9 +24,9 @@
   SOFTWARE.
 */
 
-// https://github.com/skoerfgen/LECert
+// https://github.com/skoerfgen/ACMECert
 
-class LECert extends LE { // LECert - A Let's Encrypt (ACME v2) PHP client library
+class ACMECert extends ACME { // ACMECert - A Let's Encrypt (ACME v2) PHP client library
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){
 		$this->log('Registering account');
@@ -68,15 +68,15 @@ class LECert extends LE { // LECert - A Let's Encrypt (ACME v2) PHP client libra
 	}
 
 	public function keyChange($new_account_key_pem){ // account key roll-over
-		$le2=new LE();
-		$le2->loadAccountKey($new_account_key_pem);
+		$ac2=new ACME();
+		$ac2->loadAccountKey($new_account_key_pem);
 		$account=$this->getAccountID();
-		$le2->resources=$this->resources;
+		$ac2->resources=$this->resources;
 
 		$this->log('Account Key Roll-Over');
 
 		$ret=$this->request('keyChange',
-			$le2->jws_encapsulate('keyChange',array(
+			$ac2->jws_encapsulate('keyChange',array(
 				'account'=>$account,
 				'oldKey'=>$this->jwk_header['jwk']
 			),true)
@@ -377,7 +377,7 @@ class LECert extends LE { // LECert - A Let's Encrypt (ACME v2) PHP client libra
 	}
 }
 
-class LE { // Communication with Let's Encrypt via ACME v2 protocol
+class ACME { // Communication with Let's Encrypt via ACME v2 protocol
 
 	protected
 		$directories=array(
@@ -540,7 +540,7 @@ class LE { // Communication with Let's Encrypt via ACME v2 protocol
 			'http'=>array(
 				'header'=>($data===null||$data===false)?'':'Content-Type: application/jose+json',
 				'method'=>$data===false?'HEAD':($data===null?'GET':'POST'),
-				'user_agent'=>'LECert v1.0 (+https://github.com/skoerfgen/LECert)',
+				'user_agent'=>'ACMECert v1.0 (+https://github.com/skoerfgen/ACMECert)',
 				'ignore_errors'=>true,
 				'timeout'=>60,
 				'content'=>$data

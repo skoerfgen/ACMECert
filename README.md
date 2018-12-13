@@ -1,6 +1,6 @@
 # ACMECert
 
-A [Let's Encrypt](https://letsencrypt.org/) ([ACME v2](https://ietf-wg-acme.github.io/acme/draft-ietf-acme-acme.html)) PHP client library. (~ 600 lines of code)
+PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2](https://ietf-wg-acme.github.io/acme/draft-ietf-acme-acme.html)) (~ 600 lines of code).
 
 ## Description
 

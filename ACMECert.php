@@ -26,7 +26,7 @@
 
 // https://github.com/skoerfgen/ACMECert
 
-class ACMECert extends ACME { // ACMECert - A Let's Encrypt (ACME v2) PHP client library
+class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encrypt (ACME v2)
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){
 		$this->log('Registering account');
@@ -183,6 +183,7 @@ class ACMECert extends ACME { // ACMECert - A Let's Encrypt (ACME v2) PHP client
 				}
 			}
 		}
+
 		$this->log('Finalizing Order');
 
 		$ret=$this->request($order['finalize'],array(
@@ -280,8 +281,6 @@ class ACMECert extends ACME { // ACMECert - A Let's Encrypt (ACME v2) PHP client
 		return $out;
 	}
 
-	// ====================================
-
 	private function parse_challenges($authorization,$type,&$url){
 		foreach($authorization['challenges'] as $idx=>$challenge){
 			if ($challenge['type']!=$type) continue;
@@ -377,7 +376,7 @@ class ACMECert extends ACME { // ACMECert - A Let's Encrypt (ACME v2) PHP client
 	}
 }
 
-class ACME { // Communication with Let's Encrypt via ACME v2 protocol
+class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 	protected
 		$directories=array(

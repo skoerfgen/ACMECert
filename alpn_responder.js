@@ -17,8 +17,8 @@ var server=tls.createServer({
 
 process.stdin.resume();
 process.stdin.on('end',function(){
-  server.close(function () {
-    console.log('ACMECert Example ALPN Responder - Terminating');
+	server.close(function () {
+		console.log('ACMECert Example ALPN Responder - Terminating');
 		process.exit(0);
-  });
+	});
 });

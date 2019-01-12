@@ -68,7 +68,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 	}
 
 	public function keyChange($new_account_key_pem){ // account key roll-over
-		$ac2=new ACME();
+		$ac2=new ACMEv2();
 		$ac2->loadAccountKey($new_account_key_pem);
 		$account=$this->getAccountID();
 		$ac2->resources=$this->resources;

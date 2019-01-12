@@ -539,7 +539,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			'http'=>array(
 				'header'=>($data===null||$data===false)?'':'Content-Type: application/jose+json',
 				'method'=>$data===false?'HEAD':($data===null?'GET':'POST'),
-				'user_agent'=>'ACMECert v1.0 (+https://github.com/skoerfgen/ACMECert)',
+				'user_agent'=>'ACMECert v1.1 (+https://github.com/skoerfgen/ACMECert)',
 				'ignore_errors'=>true,
 				'timeout'=>60,
 				'content'=>$data

@@ -135,49 +135,68 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		if ($order['status']==='ready') {
 			$this->log('All authorizations already valid, skipping validation');
 		}else{
-			$auth_count=count($order['authorizations']);
-			foreach(array_reverse($order['authorizations']) as $nr=>$auth_url){
-				$this->log('Fetching authorization ('.($nr+1).'/'.$auth_count.')');
-				$ret=$this->request($auth_url,'');
-				$authorization=$ret['body'];
+			$groups=array();
+			foreach($order['identifiers'] as $idx=>$arr){
+				$groups[ltrim($arr['value'],'*.')][$idx]=$arr['value'];
+			}
 
-				if ($authorization['status']!=='pending') {
-					$this->log('Authorization already valid, skipping validation');
-				}else{
-					$domain=((isset($authorization['wildcard'])&&$authorization['wildcard'])?'*.':'').$authorization['identifier']['value'];
-					$config=$domain_config[$domain];
-					$type=$config['challenge'];
+			foreach($groups as $group){
+				$pending_challenges=array();
 
-					$challenge=$this->parse_challenges($authorization,$type,$challenge_url);
+				try {
+					foreach($group as $idx=>$domain){
+						$this->log('Fetching authorization for '.$domain);
+						$auth_url=$order['authorizations'][$idx];
+						$ret=$this->request($auth_url,'');
+						$authorization=$ret['body'];
 
-					$opts=array(
-						'domain'=>$domain,
-						'config'=>$config
-					);
-					list($opts['key'],$opts['value'])=$challenge;
+						if ($authorization['status']!=='pending') {
+							$this->log('Authorization already valid, skipping validation');
+						}else{
+							$config=$domain_config[$domain];
+							$type=$config['challenge'];
 
-					$this->log('Triggering challenge callback for '.$domain.' ['.$type.']');
-					$remove_cb=$callback($opts);
+							$challenge=$this->parse_challenges($authorization,$type,$challenge_url);
 
-					$this->log('Notifying server for validation');
-					$this->request($challenge_url,new StdClass);
+							$opts=array(
+								'domain'=>$domain,
+								'config'=>$config
+							);
+							list($opts['key'],$opts['value'])=$challenge;
 
-					$this->log('Waiting for server challenge validation');
-					sleep(1);
+							$this->log('Triggering challenge callback for '.$domain.' ['.$type.']');
+							$remove_cb=$callback($opts);
 
-					if (!$this->poll('pending',$auth_url,'',$body)) {
-						$this->log('Validation failed: '.$domain);
-						if ($remove_cb) $remove_cb($opts);
+							$pending_challenges[]=array($remove_cb,$opts,$challenge_url,$auth_url);
+						}
+					}
 
-						$ret=array_values(array_filter($body['challenges'],function($item)use($type){
-							return $item['type']==$type;
-						}));
+					foreach($pending_challenges as $challenge){
+						list($remove_cb,$opts,$challenge_url,$auth_url)=$challenge;
+						$this->log('Notifying server for validation of '.$opts['domain']);
+						$this->request($challenge_url,new StdClass);
 
-						$error=$ret[0]['error'];
+						$this->log('Waiting for server challenge validation');
+						sleep(1);
 
-						throw new Exception('Challenge validation failed: '.$error['detail'].' ('.$error['type'].')');
-					}else{
-						$this->log('Validation successful: '.$domain);
+						if (!$this->poll('pending',$auth_url,$body)) {
+							$this->log('Validation failed: '.$opts['domain']);
+
+							$ret=array_values(array_filter($body['challenges'],function($item)use($type){
+								return $item['type']==$type;
+							}));
+
+							$error=$ret[0]['error'];
+
+							throw new Exception('Challenge validation failed: '.$error['detail'].' ('.$error['type'].')');
+						}else{
+							$this->log('Validation successful: '.$domain);
+						}
+					}
+
+				}finally{
+					foreach($pending_challenges as $challenge){
+						list($remove_cb,$opts)=$challenge;
 						if ($remove_cb) $remove_cb($opts);
 					}
 				}
@@ -195,7 +214,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			return $this->request_certificate($ret);
 		}
 
-		if ($this->poll('processing',$order_location,'',$ret)) {
+		if ($this->poll('processing',$order_location,$ret)) {
 			return $this->request_certificate($ret);
 		}
 
@@ -308,10 +327,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		throw new Exception('Challenge type: "'.$type.'" not available');
 	}
 
-	private function poll($initial,$type,$payload='',&$ret){
+	private function poll($initial,$type,&$ret){
 		$max_tries=8;
 		for($i=0;$i<$max_tries;$i++){
-			$ret=$this->request($type,$payload);
+			$ret=$this->request($type);
 			$ret=$ret['body'];
 			if ($ret['status']!==$initial) return $ret['status']==='valid';
 			$s=pow(2,min($i,6));
@@ -539,7 +558,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			'http'=>array(
 				'header'=>($data===null||$data===false)?'':'Content-Type: application/jose+json',
 				'method'=>$data===false?'HEAD':($data===null?'GET':'POST'),
-				'user_agent'=>'ACMECert v1.1 (+https://github.com/skoerfgen/ACMECert)',
+				'user_agent'=>'ACMECert v1.2 (+https://github.com/skoerfgen/ACMECert)',
 				'ignore_errors'=>true,
 				'timeout'=>60,
 				'content'=>$data

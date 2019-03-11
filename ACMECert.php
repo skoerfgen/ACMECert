@@ -136,9 +136,17 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			$this->log('All authorizations already valid, skipping validation');
 		}else{
 			$groups=array();
+
 			foreach($order['identifiers'] as $idx=>$arr){
-				$groups[ltrim($arr['value'],'*.')][$idx]=$arr['value'];
+				$identifier=$arr['value'];
+				$groups[
+					$domain_config[$identifier]['challenge'].
+					'|'.
+					ltrim($identifier,'*.')
+				][$idx]=$identifier;
 			}
+
+			krsort($groups);
 
 			foreach($groups as $group){
 				$pending_challenges=array();
@@ -182,8 +190,8 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 						if (!$this->poll('pending',$auth_url,$body)) {
 							$this->log('Validation failed: '.$opts['domain']);
 
-							$ret=array_values(array_filter($body['challenges'],function($item)use($type){
-								return $item['type']==$type;
+							$ret=array_values(array_filter($body['challenges'],function($item){
+								return isset($item['error']);
 							}));
 
 							$error=$ret[0]['error'];

@@ -12,7 +12,7 @@ It contains a set of functions allowing you to:
 
 - [generate RSA keys](#acmecertgeneratersakey)
 - manage account: [register](#acmecertregister)/[update](#acmecertupdate)/[deactivate](#acmecertdeactivateaccount) and [account key roll-over](#acmecertkeychange)
-- [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates
+- [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates (to renew a certificate just get a new one)
 - [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) a certificate is still valid
 > see [Function Reference](#function-reference) for a full list
 

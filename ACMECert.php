@@ -121,18 +121,25 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$this->getAccountID(); // get account info upfront to avoid mixed up logging order
 
 		// === Order ===
-		$this->log('Creating Order');
-		$ret=$this->request('newOrder',array(
-			'identifiers'=>array_map(
-				function($domain){
-					return array('type'=>'dns','value'=>$domain);
-				},
-				$domains
-			)
-		));
-		$order=$ret['body'];
-		$order_location=$ret['headers']['location'];
-		$this->log('Order created: '.$order_location);
+		if (!is_string($callback)) {
+			$this->log('Creating Order');
+			$ret=$this->request('newOrder',array(
+				'identifiers'=>array_map(
+					function($domain){
+						return array('type'=>'dns','value'=>$domain);
+					},
+					$domains
+				)
+			));
+			$order=$ret['body'];
+			$order_location=$ret['headers']['location'];
+			$this->log('Order created: '.$order_location);
+		}else{
+			$order_location=$callback;
+			$ret=$this->request($order_location);
+			$order=$ret['body'];
+			$this->log('Resuming Order: '.$order_location);
+		}
 
 		// === Authorization ===
 		if ($order['status']==='ready') {
@@ -170,6 +177,8 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			// make sure dns-01 comes last to avoid DNS problems for other challenges
 			krsort($groups);
 
+			$delayed=false;
+
 			foreach($groups as $group){
 				$pending_challenges=array();
 
@@ -188,8 +197,15 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 						);
 						list($opts['key'],$opts['value'])=$challenge;
 
-						$this->log('Triggering challenge callback for '.$domain.' using '.$type);
-						$remove_cb=$callback($opts);
+						$remove_cb=null;
+						if (is_callable($callback)) {
+							$this->log('Triggering challenge callback for '.$domain.' using '.$type);
+							$remove_cb=$callback($opts);
+							if ($remove_cb===false){
+								$delayed=true;
+								continue;
+							}
+						}
 
 						$pending_challenges[]=array($remove_cb,$opts,$challenge_url,$auth_url);
 					}
@@ -228,6 +244,8 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				}
 			}
 		}
+
+		if ($delayed) return array($order_location);
 
 		$this->log('Finalizing Order');
 

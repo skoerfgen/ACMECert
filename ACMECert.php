@@ -105,6 +105,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 	public function getCertificateChain($pem,$domain_config,$callback){
 		$domain_config=array_change_key_case($domain_config,CASE_LOWER);
 		$domains=array_keys($domain_config);
+		$delayed=false;
 
 		// autodetect if Private Key or CSR is used
 		if ($key=openssl_pkey_get_private($pem)){ // Private Key detected
@@ -176,8 +177,6 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 			// make sure dns-01 comes last to avoid DNS problems for other challenges
 			krsort($groups);
-
-			$delayed=false;
 
 			foreach($groups as $group){
 				$pending_challenges=array();

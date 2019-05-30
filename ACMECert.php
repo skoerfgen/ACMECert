@@ -211,7 +211,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 							$error=$ret[0]['error'];
 
-							throw new Exception('Challenge validation failed: '.$error['detail'].' ('.$error['type'].')');
+							throw new ACME_Exception($error['type'],'Challenge validation failed: '.$error['detail']);
 						}else{
 							$this->log('Validation successful: '.$opts['domain']);
 						}
@@ -584,7 +584,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			'http'=>array(
 				'header'=>($data===null||$data===false)?'':'Content-Type: application/jose+json',
 				'method'=>$data===false?'HEAD':($data===null?'GET':'POST'),
-				'user_agent'=>'ACMECert v1.6 (+https://github.com/skoerfgen/ACMECert)',
+				'user_agent'=>'ACMECert v2.0 (+https://github.com/skoerfgen/ACMECert)',
 				'ignore_errors'=>true,
 				'timeout'=>60,
 				'content'=>$data
@@ -622,9 +622,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				break;
 				case 'application/problem+json':
 					$body=$this->json_decode($body);
-					$e=new ACME_Exception($body['detail'].' ('.$body['type'].')');
-					$e->setType($body['type']);
-					throw $e;
+					throw new ACME_Exception($body['type'],$body['detail']);
 				break;
 			}
 		}
@@ -646,8 +644,9 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 class ACME_Exception extends Exception {
 	private $type;
-	function setType($type){
+	function __construct($type,$msg){
 		$this->type=$type;
+		parent::__construct($msg.' ('.$type.')');
 	}
 	function getType(){
 		return $this->type;

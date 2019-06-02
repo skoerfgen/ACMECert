@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2](https://ietf-wg-acme.github.io/acme/draft-ietf-acme-acme.html)) (~ 600 lines of code).  
-Version: 2.0
+Version: 1.6
 
 ## Description
 
@@ -51,9 +51,10 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded 
 #### Require ACMECert
 ```php
 require 'ACMECert.php';
+use skoerfgen\ACMECert;
 ```
 
-#### Choose Live or Staging Environment
+#### Choose Live / Staging / Custom (test) Environment
 > Live
 ```php
 $ac=new ACMECert();
@@ -61,6 +62,10 @@ $ac=new ACMECert();
 > Staging
 ```php
 $ac=new ACMECert(false);
+```
+> Custom (test)
+```php
+$ac = new ACMECert("https://x.x.x.x:14000/dir", ["http"=>…, "ssl"=>["verify_peer"=>FALSE, …]]);
 ```
 
 #### Generate RSA Private Key
@@ -229,6 +234,7 @@ Here an example:
 
 ```php
 require 'ACMECert.php';
+use skoerfgen\ACMECert;
 $ac=new ACMECert();
 $ac->setAccountKey('file://account_key.pem');
 try {
@@ -249,12 +255,15 @@ try {
 
 Creates a new ACMECert instance.
 ```php
-public ACMECert::__construct ( bool $live = TRUE )
+public ACMECert::__construct ( bool $live = TRUE, array $opts = [] )
 ```
 ###### Parameters
 > **`live`**
 >
 > When **FALSE**, the ACME v2 [staging environment](https://acme-staging-v02.api.letsencrypt.org/) is used otherwise the [live environment](https://acme-v02.api.letsencrypt.org/).
+> **`$opts`**
+>
+> Additional HTTP/SSL options to be included in each ACME request.
 
 ###### Return Values
 > Returns a new ACMECert instance.

@@ -1,5 +1,5 @@
 <?php
-
+namespace skoerfgen;
 /*
   MIT License
 
@@ -68,7 +68,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 	}
 
 	public function keyChange($new_account_key_pem){ // account key roll-over
-		$ac2=new ACMEv2();
+		$ac2 = new parent($this->directory, $this->http_opts);
 		$ac2->loadAccountKey($new_account_key_pem);
 		$account=$this->getAccountID();
 		$ac2->resources=$this->resources;
@@ -89,10 +89,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 	public function revoke($pem){
 		if (false===($res=openssl_x509_read($pem))){
-			throw new Exception('Could not load certificate: '.$pem.' ('.openssl_error_string().')');
+			throw new \Exception('Could not load certificate: '.$pem.' ('.openssl_error_string().')');
 		}
 		if (false===(openssl_x509_export($res,$certificate))){
-			throw new Exception('Could not export certificate: '.$pem.' ('.openssl_error_string().')');
+			throw new \Exception('Could not export certificate: '.$pem.' ('.openssl_error_string().')');
 		}
 
 		$this->log('Revoking certificate');
@@ -115,7 +115,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			$this->log('Using provided CSR');
 			$csr=$pem;
 		}else{
-			throw new Exception('Could not load Private Key or CSR ('.openssl_error_string().'): '.$pem);
+			throw new \Exception('Could not load Private Key or CSR ('.openssl_error_string().'): '.$pem);
 		}
 
 		$this->getAccountID(); // get account info upfront to avoid mixed up logging order
@@ -197,7 +197,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 					foreach($pending_challenges as $arr){
 						list($remove_cb,$opts,$challenge_url,$auth_url)=$arr;
 						$this->log('Notifying server for validation of '.$opts['domain']);
-						$this->request($challenge_url,new StdClass);
+						$this->request($challenge_url,new \StdClass);
 
 						$this->log('Waiting for server challenge validation');
 						sleep(1);
@@ -211,7 +211,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 							$error=$ret[0]['error'];
 
-							throw new ACME_Exception($error['type'],'Challenge validation failed: '.$error['detail']);
+							throw new \Exception('Challenge validation failed: '.$error['detail'].' ('.$error['type'].')');
 						}else{
 							$this->log('Validation successful: '.$opts['domain']);
 						}
@@ -244,12 +244,12 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			return $this->request_certificate($ret);
 		}
 
-		throw new Exception('Order failed');
+		throw new \Exception('Order failed');
 	}
 
 	public function generateCSR($domain_key_pem,$domains){
 		if (false===($domain_key=openssl_pkey_get_private($domain_key_pem))){
-			throw new Exception('Could not load domain key: '.$domain_key_pem.' ('.openssl_error_string().')');
+			throw new \Exception('Could not load domain key: '.$domain_key_pem.' ('.openssl_error_string().')');
 		}
 
 		$fn=$this->tmp_ssl_cnf($domains);
@@ -263,10 +263,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		openssl_free_key($domain_key);
 
 		if (false===$csr) {
-			throw new Exception('Could not generate CSR ! ('.openssl_error_string().')');
+			throw new \Exception('Could not generate CSR ! ('.openssl_error_string().')');
 		}
 		if (false===openssl_csr_export($csr,$out)){
-			throw new Exception('Could not export CSR ! ('.openssl_error_string().')');
+			throw new \Exception('Could not export CSR ! ('.openssl_error_string().')');
 		}
 
 		return $out;
@@ -280,10 +280,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			'private_key_type'=>OPENSSL_KEYTYPE_RSA,
 		);
 		if (false===($key=openssl_pkey_new($config))){
-			throw new Exception('Could not generate new private key ! ('.openssl_error_string().')');
+			throw new \Exception('Could not generate new private key ! ('.openssl_error_string().')');
 		}
 		if (false===openssl_pkey_export($key,$pem,null,$config)){
-			throw new Exception('Could not export private key ! ('.openssl_error_string().')');
+			throw new \Exception('Could not export private key ! ('.openssl_error_string().')');
 		}
 		unlink($fn);
 		openssl_free_key($key);
@@ -292,10 +292,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 	public function parseCertificate($cert_pem){
 		if (false===($ret=openssl_x509_read($cert_pem))) {
-			throw new Exception('Could not load certificate: '.$cert_pem.' ('.openssl_error_string().')');
+			throw new \Exception('Could not load certificate: '.$cert_pem.' ('.openssl_error_string().')');
 		}
 		if (!is_array($ret=openssl_x509_parse($ret,true))) {
-			throw new Exception('Could not parse certificate ('.openssl_error_string().')');
+			throw new \Exception('Could not parse certificate ('.openssl_error_string().')');
 		}
 		return $ret;
 	}
@@ -318,10 +318,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$cert=openssl_csr_sign($csr,null,$domain_key_pem,1,$config);
 		unlink($fn);
 		if (false===$cert) {
-			throw new Exception('Could not generate self signed certificate ! ('.openssl_error_string().')');
+			throw new \Exception('Could not generate self signed certificate ! ('.openssl_error_string().')');
 		}
 		if (false===openssl_x509_export($cert,$out)){
-			throw new Exception('Could not export self signed certificate ! ('.openssl_error_string().')');
+			throw new \Exception('Could not export self signed certificate ! ('.openssl_error_string().')');
 		}
 		return $out;
 	}
@@ -350,7 +350,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				break;
 			}
 		}
-		throw new Exception('Challenge type: "'.$type.'" not available');
+		throw new \Exception('Challenge type: "'.$type.'" not available');
 	}
 
 	private function poll($initial,$type,&$ret){
@@ -365,14 +365,14 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				sleep($s);
 			}
 		}
-		throw new Exception('Aborted after '.$max_tries.' tries');
+		throw new \Exception('Aborted after '.$max_tries.' tries');
 	}
 
 	private function request_certificate($ret){
 		$this->log('Requesting certificate-chain');
 		$ret=$this->request($ret['certificate'],'');
-		if ($ret['headers']['content-type']!=='application/pem-certificate-chain'){
-			throw new Exception('Unexpected content-type: '.$ret['headers']['content-type']);
+		if ($this->parseContent($ret['headers']['content-type'], $ret['body'])===NULL){
+			throw new \Exception('Unexpected content-type: '.$ret['headers']['content-type']);
 		}
 		$this->log('Certificate-chain retrieved');
 		return $ret['body'];
@@ -380,7 +380,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 	private function tmp_ssl_cnf($domains=null,$extension=''){
 		if (false===($fn=tempnam(sys_get_temp_dir(), "CNF_"))){
-			throw new Exception('Failed to create temp file !');
+			throw new \Exception('Failed to create temp file !');
 		}
 		if (false===@file_put_contents($fn,
 			'HOME = .'."\n".
@@ -400,7 +400,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				''
 			).$extension
 		)){
-			throw new Exception('Failed to write tmp file: '.$fn);
+			throw new \Exception('Failed to write tmp file: '.$fn);
 		}
 		return $fn;
 	}
@@ -427,10 +427,17 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce,$mode;
+		),$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce, $http_opts;
 
-	public function __construct($live=true){
-		$this->directory=$this->directories[$this->mode=($live?'live':'staging')];
+	public function __construct($live=FALSE, $opts=[]){
+		$this->http_opts = $opts;
+		if (is_bool($live)) {
+			$this->directory = $this->directories[($live ? 'live' : 'staging')];
+		} else if (is_string($live)) {
+			$this->directory = $live;
+		} else {
+			throw new \Exception("Invalid ACME dir. Should be [TRUE|FALSE|'http://....'].");
+		} // fin if
 	}
 
 	public function __destruct(){
@@ -440,11 +447,11 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	public function loadAccountKey($account_key_pem){
 		if ($this->account_key) openssl_pkey_free($this->account_key);
 		if (false===($this->account_key=openssl_pkey_get_private($account_key_pem))){
-			throw new Exception('Could not load account key: '.$account_key_pem.' ('.openssl_error_string().')');
+			throw new \Exception('Could not load account key: '.$account_key_pem.' ('.openssl_error_string().')');
 		}
 
 		if (false===($details=openssl_pkey_get_details($this->account_key))){
-			throw new Exception('Could not get account key details: '.$account_key_pem.' ('.openssl_error_string().')');
+			throw new \Exception('Could not get account key details: '.$account_key_pem.' ('.openssl_error_string().')');
 		}
 
 		$this->jwk_header=array( // JOSE Header - RFC7515
@@ -476,7 +483,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	}
 
 	public function log($txt){
-		error_log($txt);
+		error_log(date("[Y-m-d H:i:s]")." {$txt}");
 	}
 
 	protected function getAccount(){
@@ -492,14 +499,14 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 	protected function request($type,$payload='',$retry=false){
 		if (!$this->jwk_header) {
-			throw new Exception('use loadAccountKey to load an account key');
+			throw new \Exception('use loadAccountKey to load an account key');
 		}
 
 		if (!$this->resources){
-			$this->log('Initializing ACME v2 '.$this->mode.' environment');
+			$this->log('Initializing ACME v2 environment');
 			$ret=$this->http_request($this->directory); // Read ACME Directory
 			if (!is_array($ret['body'])) {
-				throw new Exception('Failed to read directory: '.$this->directory);
+				throw new \Exception('Failed to read directory: '.$this->directory);
 			}
 			$this->resources=$ret['body']; // store resources for later use
 			$this->log('Initialized');
@@ -557,7 +564,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			$this->account_key,
 			'SHA256'
 		)){
-			throw new Exception('Failed to sign payload !'.' ('.openssl_error_string().')');
+			throw new \Exception('Failed to sign payload !'.' ('.openssl_error_string().')');
 		}
 
 		return array(
@@ -574,26 +581,27 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	private function json_decode($str){
 		$ret=json_decode($str,true);
 		if ($ret===null) {
-			throw new Exception('Could not parse JSON: '.$str);
+			throw new \Exception('Could not parse JSON: '.$str);
 		}
 		return $ret;
 	}
 
 	private function http_request($url,$data=null){
-		$opts=array(
+		$http_method = ($data===FALSE ? 'HEAD' : ($data===NULL ? 'GET' : 'POST'));
+		$opts=array_merge(array(
 			'http'=>array(
 				'header'=>($data===null||$data===false)?'':'Content-Type: application/jose+json',
-				'method'=>$data===false?'HEAD':($data===null?'GET':'POST'),
-				'user_agent'=>'ACMECert v2.0 (+https://github.com/skoerfgen/ACMECert)',
+				'method'=>$http_method,
+				'user_agent'=>'ACMECert v1.6 (+https://github.com/skoerfgen/ACMECert)',
 				'ignore_errors'=>true,
 				'timeout'=>60,
 				'content'=>$data
 			)
-		);
+		), $this->http_opts);
 		$took=microtime(true);
 		$body=file_get_contents($url,false,stream_context_create($opts));
 		$took=round(microtime(true)-$took,2).'s';
-		if ($body===false) throw new Exception('HTTP Request Error: '.$url);
+		if ($body===false) throw new \Exception('HTTP Request Error: '.$url);
 
 		$headers=array_reduce( // parse http response headers into array
 			$http_response_header,
@@ -611,24 +619,16 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			array()
 		);
 
-		$this->log('  '.$url.' ['.$code.' '.$status.'] ('.$took.')');
+		$this->log($http_method.' '.$url.' ['.$code.' '.$status.'] ('.$took.')');
 
 		if (!empty($headers['replay-nonce'])) $this->nonce=$headers['replay-nonce'];
 
 		if (!empty($headers['content-type'])){
-			switch($headers['content-type']){
-				case 'application/json':
-					$body=$this->json_decode($body);
-				break;
-				case 'application/problem+json':
-					$body=$this->json_decode($body);
-					throw new ACME_Exception($body['type'],$body['detail']);
-				break;
-			}
+			$body = $this->parseContent($headers['content-type'], $body);
 		}
 
 		if ($code[0]!='2') {
-			throw new Exception('Invalid HTTP-Status-Code received: '.$code.' ['.$status.']: '.$url);
+			throw new \Exception('Invalid HTTP-Status-Code received: '.$code.' ['.$status.']: '.$url);
 		}
 
 		$ret=array(
@@ -640,13 +640,31 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 		return $ret;
 	}
+	
+	public function parseContent($content_type, $content) {
+		$is_match = preg_match("/^application\/([^;]+)(;\s*charset=(.+))?$/", $content_type, $matches);
+		if (!$is_match) { throw new \Exception("Tipo de contenido desconocido."); } // fin if
+		if (is_string($content)) { $content = mb_convert_encoding($content, $matches[3], mb_detect_encoding($content, mb_detect_order(), TRUE)); } // fin if
+		switch($matches[1]){
+			case 'json':
+				return $this->json_decode($content);
+			case 'problem+json':
+				$data = $this->json_decode($content);
+				$e = new ACME_Exception($data['detail'].' ('.$data['type'].')');
+				$e->setType($data['type']);
+				throw $e;
+			case 'pem-certificate-chain':
+				if (is_resource($content) && strcmp(get_resource_type($content), "OpenSSL X.509")===0) { return $content; }
+				return (openssl_x509_read($content) ? $content : FALSE);
+		} // fin switch
+		return NULL;
+	} // fin parseContent()
 }
 
-class ACME_Exception extends Exception {
+class ACME_Exception extends \Exception {
 	private $type;
-	function __construct($type,$msg){
+	function setType($type){
 		$this->type=$type;
-		parent::__construct($msg.' ('.$type.')');
 	}
 	function getType(){
 		return $this->type;

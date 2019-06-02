@@ -1,0 +1,16 @@
+{
+	"name": "sam80180/ACMECert",
+	"description": "PHP client library for Let's Encrypt (ACME v2)",
+	"require": {
+		"php": "^5.3.0 || ^7.0",
+		"ext-openssl": "*"
+	},
+	"require-dev": {
+		
+	},
+	"autoload": {
+		"classmap" : [
+			"ACMECert.php"
+		]
+	}
+}

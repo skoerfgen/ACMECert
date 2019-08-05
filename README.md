@@ -474,7 +474,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> Challenge Type | `$opts['key']` | `$opts['value']`
 >> --- | --- | ---
 >> http-01 | path + filename | file contents
->> dns-01 | TXT Resouce Record Name | TXT Resouce Record Value
+>> dns-01 | TXT Resource Record Name | TXT Resource Record Value
 >> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
 
 ###### Return Values

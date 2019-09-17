@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2](https://ietf-wg-acme.github.io/acme/draft-ietf-acme-acme.html)) (~ 600 lines of code).  
-Version: 2.0
+Version: 2.1
 
 ## Description
 
@@ -221,16 +221,16 @@ ini_set('error_log',dirname(__FILE__).'/ACMECert.log');
 
 ## ACME_Exception
 
-If the ACME-Server reponded with an error message an `ACME_Exception` is thrown.
+If the ACME-Server responded with an error message an `ACME_Exception` is thrown. (ACME_Exception extends Exception)
 
-`ACME_Exception` has a function `getType()` to get the ACME error code.
+`ACME_Exception` has two additional functions:
 
-Here an example:
+* `getType()` to get the ACME error code:
 
 ```php
 require 'ACMECert.php';
 $ac=new ACMECert();
-$ac->setAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://account_key.pem');
 try {
   echo $ac->getAccountID().PHP_EOL;
 }catch(ACME_Exception $e){
@@ -242,6 +242,18 @@ try {
 }
 ```
 
+* `getSubproblems()` to get an array of `ACME_Exception`s if there is more than one error returned from the ACME-Server:
+
+```php
+try {
+	$cert=$ac->getCertificateChain('file://cert_private_key.pem',$domain_config,$handler);
+} catch (ACME_Exception $e){
+	$ac->log($e->getMessage()); // log original error
+	foreach($e->getSubproblems() as $subproblem){
+		$ac->log($subproblem->getMessage()); // log sub errors
+	}
+}
+```
 
 ## Function Reference
 

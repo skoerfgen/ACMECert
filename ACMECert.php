@@ -210,7 +210,6 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 							}));
 
 							$error=$ret[0]['error'];
-
 							throw new ACME_Exception($error['type'],'Challenge validation failed: '.$error['detail']);
 						}else{
 							$this->log('Validation successful: '.$opts['domain']);
@@ -584,7 +583,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			'http'=>array(
 				'header'=>($data===null||$data===false)?'':'Content-Type: application/jose+json',
 				'method'=>$data===false?'HEAD':($data===null?'GET':'POST'),
-				'user_agent'=>'ACMECert v2.0 (+https://github.com/skoerfgen/ACMECert)',
+				'user_agent'=>'ACMECert v2.1 (+https://github.com/skoerfgen/ACMECert)',
 				'ignore_errors'=>true,
 				'timeout'=>60,
 				'content'=>$data
@@ -622,7 +621,14 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				break;
 				case 'application/problem+json':
 					$body=$this->json_decode($body);
-					throw new ACME_Exception($body['type'],$body['detail']);
+					throw new ACME_Exception($body['type'],$body['detail'],
+						array_map(function($subproblem){
+							return new ACME_Exception(
+								$subproblem['type'],
+								'"'.$subproblem['identifier']['value'].'": '.$subproblem['detail']
+							);
+						},isset($body['subproblems'])?$body['subproblems']:array())
+					);
 				break;
 			}
 		}
@@ -643,12 +649,16 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 }
 
 class ACME_Exception extends Exception {
-	private $type;
-	function __construct($type,$msg){
+	private $type,$subproblems;
+	function __construct($type,$detail,$subproblems=array()){
 		$this->type=$type;
-		parent::__construct($msg.' ('.$type.')');
+		$this->subproblems=$subproblems;
+		parent::__construct($detail.' ('.$type.')');
 	}
 	function getType(){
 		return $this->type;
+	}
+	function getSubproblems(){
+		return $this->subproblems;
 	}
 }

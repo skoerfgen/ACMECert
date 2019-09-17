@@ -1,4 +1,4 @@
-/* ACMECert Example ALPN Responder */
+/* ACMECert Example ALPN Responder (only needed when using tls-alpn-01 challenge) */
 var tls=require('tls');
 var fs=require('fs');
 

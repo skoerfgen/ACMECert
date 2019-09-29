@@ -289,6 +289,25 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		return $pem;
 	}
 
+	public function generateECDSAKey($curve_name='secp384r1'){
+		$fn=$this->tmp_ssl_cnf();
+		$config=array(
+			'config'=>$fn,
+			'curve_name'=>$curve_name,
+			'private_key_bits'=>384, //dirty hack around the warning of low private key length, not affecting EC type ;)
+			'private_key_type'=>OPENSSL_KEYTYPE_EC
+		);
+		if (false===($key=openssl_pkey_new($config))){
+			throw new Exception('Could not generate new private key ! ('.openssl_error_string().')');
+		}
+		if (false===openssl_pkey_export($key,$pem,null,$config)){
+			throw new Exception('Could not export private key ! ('.openssl_error_string().')');
+		}
+		unlink($fn);
+		openssl_free_key($key);
+		return $pem;
+	}
+	
 	public function parseCertificate($cert_pem){
 		if (false===($ret=openssl_x509_read($cert_pem))) {
 			throw new Exception('Could not load certificate: '.$cert_pem.' ('.openssl_error_string().')');

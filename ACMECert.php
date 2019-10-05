@@ -89,10 +89,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 	public function revoke($pem){
 		if (false===($res=openssl_x509_read($pem))){
-			throw new Exception('Could not load certificate: '.$pem.' ('.openssl_error_string().')');
+			throw new Exception('Could not load certificate: '.$pem.' ('.$this->get_openssl_error().')');
 		}
 		if (false===(openssl_x509_export($res,$certificate))){
-			throw new Exception('Could not export certificate: '.$pem.' ('.openssl_error_string().')');
+			throw new Exception('Could not export certificate: '.$pem.' ('.$this->get_openssl_error().')');
 		}
 
 		$this->log('Revoking certificate');
@@ -115,7 +115,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			$this->log('Using provided CSR');
 			$csr=$pem;
 		}else{
-			throw new Exception('Could not load Private Key or CSR ('.openssl_error_string().'): '.$pem);
+			throw new Exception('Could not load Private Key or CSR ('.$this->get_openssl_error().'): '.$pem);
 		}
 
 		$this->getAccountID(); // get account info upfront to avoid mixed up logging order
@@ -248,7 +248,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 	public function generateCSR($domain_key_pem,$domains){
 		if (false===($domain_key=openssl_pkey_get_private($domain_key_pem))){
-			throw new Exception('Could not load domain key: '.$domain_key_pem.' ('.openssl_error_string().')');
+			throw new Exception('Could not load domain key: '.$domain_key_pem.' ('.$this->get_openssl_error().')');
 		}
 
 		$fn=$this->tmp_ssl_cnf($domains);
@@ -262,10 +262,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		openssl_free_key($domain_key);
 
 		if (false===$csr) {
-			throw new Exception('Could not generate CSR ! ('.openssl_error_string().')');
+			throw new Exception('Could not generate CSR ! ('.$this->get_openssl_error().')');
 		}
 		if (false===openssl_csr_export($csr,$out)){
-			throw new Exception('Could not export CSR ! ('.openssl_error_string().')');
+			throw new Exception('Could not export CSR ! ('.$this->get_openssl_error().')');
 		}
 
 		return $out;
@@ -279,10 +279,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			'private_key_type'=>OPENSSL_KEYTYPE_RSA,
 		);
 		if (false===($key=openssl_pkey_new($config))){
-			throw new Exception('Could not generate new private key ! ('.openssl_error_string().')');
+			throw new Exception('Could not generate new private key ! ('.$this->get_openssl_error().')');
 		}
 		if (false===openssl_pkey_export($key,$pem,null,$config)){
-			throw new Exception('Could not export private key ! ('.openssl_error_string().')');
+			throw new Exception('Could not export private key ! ('.$this->get_openssl_error().')');
 		}
 		unlink($fn);
 		openssl_free_key($key);
@@ -310,10 +310,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 	
 	public function parseCertificate($cert_pem){
 		if (false===($ret=openssl_x509_read($cert_pem))) {
-			throw new Exception('Could not load certificate: '.$cert_pem.' ('.openssl_error_string().')');
+			throw new Exception('Could not load certificate: '.$cert_pem.' ('.$this->get_openssl_error().')');
 		}
 		if (!is_array($ret=openssl_x509_parse($ret,true))) {
-			throw new Exception('Could not parse certificate ('.openssl_error_string().')');
+			throw new Exception('Could not parse certificate ('.$this->get_openssl_error().')');
 		}
 		return $ret;
 	}
@@ -336,10 +336,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$cert=openssl_csr_sign($csr,null,$domain_key_pem,1,$config);
 		unlink($fn);
 		if (false===$cert) {
-			throw new Exception('Could not generate self signed certificate ! ('.openssl_error_string().')');
+			throw new Exception('Could not generate self signed certificate ! ('.$this->get_openssl_error().')');
 		}
 		if (false===openssl_x509_export($cert,$out)){
-			throw new Exception('Could not export self signed certificate ! ('.openssl_error_string().')');
+			throw new Exception('Could not export self signed certificate ! ('.$this->get_openssl_error().')');
 		}
 		return $out;
 	}
@@ -458,11 +458,13 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	public function loadAccountKey($account_key_pem){
 		if ($this->account_key) openssl_pkey_free($this->account_key);
 		if (false===($this->account_key=openssl_pkey_get_private($account_key_pem))){
-			throw new Exception('Could not load account key: '.$account_key_pem.' ('.openssl_error_string().')');
+			throw new Exception('Could not load account key: '.$account_key_pem.' ('.$this->get_openssl_error().')');
 		}
 
 		if (false===($details=openssl_pkey_get_details($this->account_key))){
-			throw new Exception('Could not get account key details: '.$account_key_pem.' ('.openssl_error_string().')');
+			throw new Exception('Could not get account key details: '.$account_key_pem.' ('.$this->get_openssl_error().')');
+		}
+
 		}
 
 		$this->jwk_header=array( // JOSE Header - RFC7515
@@ -497,6 +499,15 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		error_log($txt);
 	}
 
+	protected function get_openssl_error(){
+		$out='';
+		$arr=error_get_last();
+		if (is_array($arr)){
+			$out=$arr['message'];
+		}
+		return $out.' | '.openssl_error_string();
+	}
+	
 	protected function getAccount(){
 		$this->log('Getting account info');
 		$ret=$this->request('newAccount',array('onlyReturnExisting'=>true));
@@ -575,7 +586,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			$this->account_key,
 			'SHA256'
 		)){
-			throw new Exception('Failed to sign payload !'.' ('.openssl_error_string().')');
+			throw new Exception('Failed to sign payload !'.' ('.$this->get_openssl_error().')');
 		}
 
 		return array(

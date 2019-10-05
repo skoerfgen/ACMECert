@@ -1,16 +1,16 @@
 # ACMECert
 
-PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2](https://ietf-wg-acme.github.io/acme/draft-ietf-acme-acme.html)) (~ 600 lines of code).  
-Version: 2.1
+PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2](https://ietf-wg-acme.github.io/acme/draft-ietf-acme-acme.html))  
+Version: 2.2
 
 ## Description
 
 ACMECert is designed to help you to setup an automated SSL/TLS-certificate/renewal process
 with a few lines of PHP.
 
-It contains a set of functions allowing you to:
+It is self contained and contains a set of functions allowing you to:
 
-- [generate RSA keys](#acmecertgeneratersakey)
+- generate [RSA](#acmecertgeneratersakey) / [EC (Elliptic Curve)](#acmecertgenerateeckey) keys
 - manage account: [register](#acmecertregister)/[update](#acmecertupdate)/[deactivate](#acmecertdeactivateaccount) and [account key roll-over](#acmecertkeychange)
 - [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates (to renew a certificate just get a new one)
 - [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) a certificate is still valid
@@ -43,7 +43,7 @@ Instead of returning `FALSE` on error, every function in ACMECert throws an [Exc
 if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded with an error message.
 
 ## Requirements
-- [x] PHP 5.3 or higher
+- [x] PHP 5.3 or higher (for EC keys PHP 7.1 or higher is required)
 - [x] OpenSSL extension
 
 ## Usage Examples
@@ -65,11 +65,17 @@ $ac=new ACMECert(false);
 
 #### Generate RSA Private Key
 ```php
-$key=$ac->generateRSAKey();
+$key=$ac->generateRSAKey(2048);
 file_put_contents('account_key.pem',$key);
 ```
 > Equivalent to: `openssl genrsa 2048 -out account_key.pem`
 
+#### Generate EC Private Key
+```php
+$key=$ac->generateECKey('P-384');
+file_put_contents('account_key.pem',$key);
+```
+> Equivalent to: `openssl ecparam -name secp384r1 -genkey -noout -out account_key.pem`
 
 #### Register Account Key with Let's Encrypt
 ```php
@@ -288,6 +294,27 @@ public string ACMECert::generateRSAKey ( int $bits = 2048 )
 > Returns the generated RSA private key as PEM encoded string.
 ###### Errors/Exceptions
 > Throws an `Exception` if the RSA key could not be generated.
+
+---
+### ACMECert::generateECKey
+
+Generate Elliptic Curve (EC) private key (used as account key or private key for a certificate).
+```php
+public string ACMECert::generateECKey ( string $curve_name = 'P-384' )
+```
+###### Parameters
+> **`curve_name`**
+>
+>	Supported Curves by Let’s Encrypt:
+> * `P-256` (prime256v1)
+> * `P-384` (secp384r1)
+> * ~~`P-521` (secp521r1)~~
+
+
+###### Return Values
+> Returns the generated EC private key as PEM encoded string.
+###### Errors/Exceptions
+> Throws an `Exception` if the EC key could not be generated.
 
 ---
 

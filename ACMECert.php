@@ -440,7 +440,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce,$mode;
+		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce,$mode;
 
 	public function __construct($live=true){
 		$this->directory=$this->directories[$this->mode=($live?'live':'staging')];
@@ -448,6 +448,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 	public function __destruct(){
 		if ($this->account_key) openssl_pkey_free($this->account_key);
+		if ($this->ch) curl_close($this->ch);
 	}
 
 	public function loadAccountKey($account_key_pem){
@@ -636,27 +637,64 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	}
 
 	private function http_request($url,$data=null){
-		$opts=array(
-			'http'=>array(
-				'header'=>($data===null||$data===false)?'':'Content-Type: application/jose+json',
-				'method'=>$data===false?'HEAD':($data===null?'GET':'POST'),
-				'user_agent'=>'ACMECert v2.2 (+https://github.com/skoerfgen/ACMECert)',
-				'ignore_errors'=>true,
-				'timeout'=>60,
-				'content'=>$data
-			)
-		);
-		$took=microtime(true);
-		$body=file_get_contents($url,false,stream_context_create($opts));
-		$took=round(microtime(true)-$took,2).'s';
-		if ($body===false) throw new Exception('HTTP Request Error: '.$url);
-
+		if ($this->ch===null) {
+			if (extension_loaded('curl') && $this->ch=curl_init()) {
+				$this->log('Using cURL');
+			}elseif(ini_get('allow_url_fopen')){
+				$this->ch=false;
+				$this->log('Using fopen wrappers');
+			}else{
+				throw new Exception('Can not connect, no cURL or fopen wrappers enabled !');
+			}
+		}
+		$method=$data===false?'HEAD':($data===null?'GET':'POST');
+		$user_agent='ACMECert v2.3 (+https://github.com/skoerfgen/ACMECert)';
+		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
+		if ($this->ch) {
+			$headers=array();
+			curl_setopt_array($this->ch,array(
+				CURLOPT_URL=>$url,
+				CURLOPT_FOLLOWLOCATION=>true,
+				CURLOPT_RETURNTRANSFER=>true,
+				CURLOPT_TCP_NODELAY=>true,
+				CURLOPT_NOBODY=>$data===false,
+				CURLOPT_USERAGENT=>$user_agent,
+				CURLOPT_CUSTOMREQUEST=>$method,
+				CURLOPT_HTTPHEADER=>$header,
+				CURLOPT_POSTFIELDS=>$data,
+				CURLOPT_HEADERFUNCTION=>function($ch,$header)use(&$headers){
+					$headers[]=$header;
+					return strlen($header);
+				}
+			));
+			$took=microtime(true);
+			$body=curl_exec($this->ch);
+			$took=round(microtime(true)-$took,2).'s';
+			if ($body===false) throw new Exception('HTTP Request Error: '.curl_error($this->ch));
+		}else{
+			$opts=array(
+				'http'=>array(
+					'header'=>$header,
+					'method'=>$method,
+					'user_agent'=>$user_agent,
+					'ignore_errors'=>true,
+					'timeout'=>60,
+					'content'=>$data
+				)
+			);
+			$took=microtime(true);
+			$body=file_get_contents($url,false,stream_context_create($opts));
+			$took=round(microtime(true)-$took,2).'s';
+			if ($body===false) throw new Exception('HTTP Request Error: '.$this->get_openssl_error());
+			$headers=$http_response_header;
+		}
+		
 		$headers=array_reduce( // parse http response headers into array
-			$http_response_header,
+			array_filter($headers,function($item){ return trim($item)!=''; }),
 			function($carry,$item)use(&$code,&$status){
 				$parts=explode(':',$item,2);
 				if (count($parts)===1){
-					list(,$code,$status)=explode(' ',$item,3);
+					list(,$code,$status)=explode(' ',trim($item),3);
 					$carry=array();
 				}else{
 					list($k,$v)=$parts;
@@ -666,7 +704,6 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			},
 			array()
 		);
-
 		$this->log('  '.$url.' ['.$code.' '.$status.'] ('.$took.')');
 
 		if (!empty($headers['replay-nonce'])) $this->nonce=$headers['replay-nonce'];

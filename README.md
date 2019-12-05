@@ -80,7 +80,7 @@ file_put_contents('account_key.pem',$key);
 
 #### Register Account Key with Let's Encrypt
 ```php
-$ac->loadAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://'.'account_key.pem');
 $ret=$ac->register(true,'info@example.com');
 print_r($ret);
 ```
@@ -89,34 +89,34 @@ print_r($ret);
 
 #### Get Account Information
 ```php
-$ac->loadAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://'.'account_key.pem');
 $ret=$ac->getAccount();
 print_r($ret);
 ```
 
 #### Account Key Roll-over
 ```php
-$ac->loadAccountKey('file://account_key.pem');
-$ret=$ac->keyChange('file://new_account_key.pem');
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ret=$ac->keyChange('file://'.'new_account_key.pem');
 print_r($ret);
 ```
 
 #### Deactivate Account
 ```php
-$ac->loadAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://'.'account_key.pem');
 $ret=$ac->deactivateAccount();
 print_r($ret);
 ```
 
 #### Revoke Certificate
 ```php
-$ac->loadAccountKey('file://account_key.pem');
-$ac->revoke('file://fullchain.pem');
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ac->revoke('file://'.'fullchain.pem');
 ```
 
 #### Get Remaining Days
 ```php
-$days=$ac->getRemainingDays('file://fullchain.pem'); // certificate or certificate-chain
+$days=$ac->getRemainingDays('file://'.'fullchain.pem'); // certificate or certificate-chain
 if ($days>30) { // renew 30 days before expiry
   die('Certificate still good, exiting..');
 }
@@ -126,7 +126,7 @@ if ($days>30) { // renew 30 days before expiry
 
 #### Get Certificate using `http-01` challenge
 ```php
-$ac->loadAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://'.'account_key.pem');
 
 $domain_config=array(
   'test1.example.com'=>array('challenge'=>'http-01','docroot'=>'/var/www/vhosts/test1.example.com'),
@@ -142,14 +142,14 @@ $handler=function($opts){
   };
 };
 
-$fullchain=$ac->getCertificateChain('file://cert_private_key.pem',$domain_config,$handler);
+$fullchain=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
 file_put_contents('fullchain.pem',$fullchain);
 ```
 
 
 #### Get Certificate using all (`http-01`,`dns-01` and `tls-alpn-01`) challenge types together
 ```php
-$ac->loadAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://'.'account_key.pem');
 
 $domain_config=array(
   'example.com'=>array('challenge'=>'http-01','docroot'=>'/var/www/vhosts/example.com'),
@@ -175,7 +175,7 @@ $handler=function($opts) use ($ac){
       };
     break;
     case 'tls-alpn-01':
-      $cert=$ac->generateALPNCertificate('file://some_private_key.pem',$opts['domain'],$opts['value']);
+      $cert=$ac->generateALPNCertificate('file://'.'some_private_key.pem',$opts['domain'],$opts['value']);
       // Use $cert and some_private_key.pem(<- does not have to be a specific key,
       // just make sure you generated one) to serve the certificate for $opts['domain']
 
@@ -208,10 +208,10 @@ $handler=function($opts) use ($ac){
 };
 
 // Example for using a pre-generated CSR as input to getCertificateChain instead of a private key:
-// $csr=$ac->generateCSR('file://cert_private_key.pem',array_keys($domain_config));
+// $csr=$ac->generateCSR('file://'.'cert_private_key.pem',array_keys($domain_config));
 // $fullchain=$ac->getCertificateChain($csr,$domain_config,$handler);
 
-$fullchain=$ac->getCertificateChain('file://cert_private_key.pem',$domain_config,$handler);
+$fullchain=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
 file_put_contents('fullchain.pem',$fullchain);
 
 ```
@@ -237,7 +237,7 @@ If the ACME-Server responded with an error message an `ACME_Exception` is thrown
 ```php
 require 'ACMECert.php';
 $ac=new ACMECert();
-$ac->loadAccountKey('file://account_key.pem');
+$ac->loadAccountKey('file://'.'account_key.pem');
 try {
   echo $ac->getAccountID().PHP_EOL;
 }catch(ACME_Exception $e){
@@ -253,7 +253,7 @@ try {
 
 ```php
 try {
-	$cert=$ac->getCertificateChain('file://cert_private_key.pem',$domain_config,$handler);
+	$cert=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
 } catch (ACME_Exception $e){
 	$ac->log($e->getMessage()); // log original error
 	foreach($e->getSubproblems() as $subproblem){
@@ -329,8 +329,8 @@ public void ACMECert::loadAccountKey ( mixed $account_key_pem )
 > **`account_key_pem`**
 >
 > can be one of the following:
-> * a string having the format file://path/to/file.pem. The named file must contain a PEM encoded private key.
-> * A PEM formatted private key.
+> * a string containing a PEM formatted private key.
+> * a string beginning with `file://` containing the filename to read a PEM formatted private key from.
 ###### Return Values
 > No value is returned.
 ###### Errors/Exceptions
@@ -420,8 +420,8 @@ public array ACMECert::keyChange ( mixed $new_account_key_pem )
 > **`new_account_key_pem`**
 >
 > can be one of the following:
-> * a string having the format file://path/to/file.pem. The named file must contain a PEM encoded private key.
-> * A PEM formatted private key.
+> * a string containing a PEM formatted private key.
+> * a string beginning with `file://` containing the filename to read a PEM formatted private key from.
 ###### Return Values
 > Returns an array containing the account information.
 ###### Errors/Exceptions
@@ -455,10 +455,11 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >
 > A Private Key used for the certificate (the needed CSR is generated automatically using the given key in this case) or an already existing CSR in one of the following formats:
 >
-> * A string having the format `file://path/to/file.pem`. The named file must contain a PEM encoded private key.
-> * A string containing a PEM formatted private key.
-> * A string having the format `file://path/to/csr.pem`; the named file must contain a PEM encoded CSR
-> * A string containing the content of a CSR, PEM encoded, may start with `-----BEGIN CERTIFICATE REQUEST-----`
+> * a string containing a PEM formatted private key.
+> * a string beginning with `file://` containing the filename to read a PEM encoded private key from.  
+>   or
+> * a string beginning with `file://` containing the filename to read a PEM encoded CSR from.
+> * a string containing the content of a CSR, PEM encoded, may start with `-----BEGIN CERTIFICATE REQUEST-----`
 
 > **`domain_config`**
 >
@@ -534,8 +535,8 @@ public void ACMECert::revoke ( mixed $pem )
 > **`pem`**
 >
 > can be one of the following:
-> * A string having the format `file://path/to/cert.pem`; the named file must contain a PEM encoded certificate or certificate-chain
-> * A string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
+> * a string beginning with `file://` containing the filename to read a PEM encoded certificate or certificate-chain from.
+> * a string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
 ###### Return Values
 > No value is returned.
 >
@@ -555,8 +556,8 @@ public string ACMECert::generateCSR ( mixed $private_key, array $domains )
 > **`private_key`**
 >
 > can be one of the following:
-> * a string having the format file://path/to/file.pem. The named file must contain a PEM encoded private key.
-> * A PEM formatted private key.
+> * a string containing a PEM formatted private key.
+> * a string beginning with `file://` containing the filename to read a PEM formatted private key from.
 
 > **`domains`**
 >
@@ -580,8 +581,8 @@ public string ACMECert::generateALPNCertificate ( mixed $private_key, string $do
 > private key used for the certificate.
 >
 > can be one of the following:
-> * a string having the format file://path/to/file.pem. The named file must contain a PEM encoded private key.
-> * A PEM formatted private key.
+> * a string containing a PEM formatted private key.
+> * a string beginning with `file://` containing the filename to read a PEM formatted private key from.
 
 > **`domain`**
 >
@@ -607,8 +608,8 @@ public array ACMECert::parseCertificate ( mixed $pem )
 > **`pem`**
 >
 > can be one of the following:
-> * A string having the format `file://path/to/cert.pem`; the named file must contain a PEM encoded certificate or certificate-chain
-> * A string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
+> * a string beginning with `file://` containing the filename to read a PEM encoded certificate or certificate-chain from.
+> * a string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
 ###### Return Values
 > Returns an array containing information about the certificate.
 ###### Errors/Exceptions
@@ -626,8 +627,8 @@ public float ACMECert::getRemainingDays ( mixed $pem )
 > **`pem`**
 >
 > can be one of the following:
-> * A string having the format `file://path/to/cert.pem`; the named file must contain a PEM encoded certificate or certificate-chain
-> * A string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
+> * a string beginning with `file://` containing the filename to read a PEM encoded certificate or certificate-chain from.
+> * a string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
 ###### Return Values
 > Returns how many days the certificate is still valid.
 ###### Errors/Exceptions

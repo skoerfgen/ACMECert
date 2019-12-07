@@ -648,7 +648,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v2.3 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v2.4 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();
@@ -691,10 +691,10 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		
 		$headers=array_reduce( // parse http response headers into array
 			array_filter($headers,function($item){ return trim($item)!=''; }),
-			function($carry,$item)use(&$code,&$status){
+			function($carry,$item)use(&$code){
 				$parts=explode(':',$item,2);
 				if (count($parts)===1){
-					list(,$code,$status)=explode(' ',trim($item),3);
+					list(,$code)=explode(' ',trim($item),3);
 					$carry=array();
 				}else{
 					list($k,$v)=$parts;
@@ -704,7 +704,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			},
 			array()
 		);
-		$this->log('  '.$url.' ['.$code.' '.$status.'] ('.$took.')');
+		$this->log('  '.$url.' ['.$code.'] ('.$took.')');
 
 		if (!empty($headers['replay-nonce'])) $this->nonce=$headers['replay-nonce'];
 
@@ -728,12 +728,11 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		if ($code[0]!='2') {
-			throw new Exception('Invalid HTTP-Status-Code received: '.$code.' ['.$status.']: '.$url);
+			throw new Exception('Invalid HTTP-Status-Code received: '.$code.': '.$url);
 		}
 
 		$ret=array(
 			'code'=>$code,
-			'status'=>$status,
 			'headers'=>$headers,
 			'body'=>$body
 		);

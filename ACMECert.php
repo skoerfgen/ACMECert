@@ -113,7 +113,14 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			$csr=$this->generateCSR($pem,$domains);
 		}elseif(openssl_csr_get_subject($pem)){ // CSR detected
 			$this->log('Using provided CSR');
-			$csr=$pem;
+			if (0===strpos($pem,'file://')) {
+				$csr=file_get_contents(substr($pem,7));
+				if (false===$csr) {
+					throw new Exception('Failed to read CSR from '.$pem.' ('.$this->get_openssl_error().')');
+				}
+			}else{
+				$csr=$pem;
+			}
 		}else{
 			throw new Exception('Could not load Private Key or CSR ('.$this->get_openssl_error().'): '.$pem);
 		}
@@ -648,7 +655,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v2.4 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v2.5 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

@@ -346,7 +346,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 	}
 
 	private function parse_challenges($authorization,$type,&$url){
-		foreach($authorization['challenges'] as $idx=>$challenge){
+		foreach($authorization['challenges'] as $challenge){
 			if ($challenge['type']!=$type) continue;
 
 			$url=$challenge['url'];
@@ -594,7 +594,6 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		if (!$is_inner_jws) {
 			if (!$this->nonce) {
 				$ret=$this->http_request($this->resources['newNonce'],false);
-				$this->nonce=$ret['headers']['replay-nonce'];
 			}
 			$protected['nonce']=$this->nonce;
 		}
@@ -655,7 +654,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v2.5 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v2.6 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

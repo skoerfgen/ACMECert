@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555))  
-Version: 2.5
+Version: 2.6
 
 ## Description
 
@@ -193,13 +193,20 @@ $handler=function($opts) use ($ac){
       // Start ALPN Responder (requires node.js)
       $resource=proc_open(
         'node alpn_responder.js some_private_key.pem alpn_cert.pem',
-        array(0=>array('pipe','r')),
+        array(
+          0=>array('pipe','r'),
+          1=>array('pipe','w')
+        ),
         $pipes
       );
+
+      // wait until alpn responder is listening
+      fgets($pipes[1]);
 
       return function($opts) use ($resource,$pipes){
         // Stop ALPN Responder
         fclose($pipes[0]);
+        fclose($pipes[1]);
         proc_close($resource);
         shell_exec('/etc/init.d/apache2 start');
       };

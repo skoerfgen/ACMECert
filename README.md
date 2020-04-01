@@ -79,7 +79,7 @@ $ac=new ACMECert(false);
 $key=$ac->generateRSAKey(2048);
 file_put_contents('account_key.pem',$key);
 ```
-> Equivalent to: `openssl genrsa 2048 -out account_key.pem`
+> Equivalent to: `openssl genrsa -out account_key.pem 2048`
 
 #### Generate EC Private Key
 ```php

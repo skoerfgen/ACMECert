@@ -212,11 +212,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 						if (!$this->poll('pending',$auth_url,$body)) {
 							$this->log('Validation failed: '.$opts['domain']);
 
-							$ret=array_values(array_filter($body['challenges'],function($item){
-								return isset($item['error']);
-							}));
-
-							$error=$ret[0]['error'];
+							$error=$body['challenges'][0]['error'];
 							throw new ACME_Exception($error['type'],'Challenge validation failed: '.$error['detail']);
 						}else{
 							$this->log('Validation successful: '.$opts['domain']);
@@ -654,7 +650,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v2.6 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v2.7 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

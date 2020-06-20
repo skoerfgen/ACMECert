@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555))  
-Version: 2.6
+Version: 2.7
 
 ## Description
 
@@ -46,16 +46,6 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded 
 - [x] PHP 5.3 or higher (for EC keys PHP 7.1 or higher is required)
 - [x] [OpenSSL extension](https://www.php.net/manual/de/book.openssl.php)
 - [x] enabled [fopen wrappers](https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-fopen) (allow_url_fopen=1) **or** [cURL extension](https://www.php.net/manual/en/book.curl.php)
-
-## Donate
-
-If you find this software useful, please consider making a donation:
-
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NF56DKHUDGPJU&source=url)
-
-Thank you!
-
-<hr>
 
 ## Usage Examples
 

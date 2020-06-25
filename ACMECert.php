@@ -106,25 +106,6 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$domain_config=array_change_key_case($domain_config,CASE_LOWER);
 		$domains=array_keys($domain_config);
 
-		// autodetect if Private Key or CSR is used
-		if ($key=openssl_pkey_get_private($pem)){ // Private Key detected
-			openssl_free_key($key);
-			$this->log('Generating CSR');
-			$csr=$this->generateCSR($pem,$domains);
-		}elseif(openssl_csr_get_subject($pem)){ // CSR detected
-			$this->log('Using provided CSR');
-			if (0===strpos($pem,'file://')) {
-				$csr=file_get_contents(substr($pem,7));
-				if (false===$csr) {
-					throw new Exception('Failed to read CSR from '.$pem.' ('.$this->get_openssl_error().')');
-				}
-			}else{
-				$csr=$pem;
-			}
-		}else{
-			throw new Exception('Could not load Private Key or CSR ('.$this->get_openssl_error().'): '.$pem);
-		}
-
 		$this->getAccountID(); // get account info upfront to avoid mixed up logging order
 
 		// === Order ===
@@ -198,7 +179,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 						$this->log('Triggering challenge callback for '.$domain.' using '.$type);
 						$remove_cb=$callback($opts);
 
-						$pending_challenges[]=array($remove_cb,$opts,$challenge_url,$auth_url);
+						if ('no_validation'!==$pem) $pending_challenges[]=array($remove_cb,$opts,$challenge_url,$auth_url);
 					}
 
 					foreach($pending_challenges as $arr){
@@ -230,7 +211,28 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				}
 			}
 		}
-
+		
+		if ('no_validation'===$pem) return;
+		
+		// autodetect if Private Key or CSR is used
+		if ($key=openssl_pkey_get_private($pem)){ // Private Key detected
+			openssl_free_key($key);
+			$this->log('Generating CSR');
+			$csr=$this->generateCSR($pem,$domains);
+		}elseif(openssl_csr_get_subject($pem)){ // CSR detected
+			$this->log('Using provided CSR');
+			if (0===strpos($pem,'file://')) {
+				$csr=file_get_contents(substr($pem,7));
+				if (false===$csr) {
+					throw new Exception('Failed to read CSR from '.$pem.' ('.$this->get_openssl_error().')');
+				}
+			}else{
+				$csr=$pem;
+			}
+		}else{
+			throw new Exception('Could not load Private Key or CSR ('.$this->get_openssl_error().'): '.$pem);
+		}
+		
 		$this->log('Finalizing Order');
 
 		$ret=$this->request($order['finalize'],array(
@@ -650,7 +652,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v2.7 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v2.7.1 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

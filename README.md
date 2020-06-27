@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555))  
-Version: 2.7
+Version: 2.8
 
 ## Description
 
@@ -455,7 +455,7 @@ Get certificate-chain (certificate + the intermediate certificate).
 
 *This is what Apache >= 2.4.8 needs for [`SSLCertificateFile`](https://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile), and what Nginx needs for [`ssl_certificate`](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate).*
 ```php
-public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback )
+public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback, bool $force_validation = FALSE )
 ```
 ###### Parameters
 > **`pem`**
@@ -524,6 +524,10 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> http-01 | path + filename | file contents
 >> dns-01 | TXT Resource Record Name | TXT Resource Record Value
 >> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
+
+> **`force_validation`**
+>
+> If `TRUE` it is ensured that the callback function is called for each domain and does not get skipped due to eventually already valid authorizations.
 
 ###### Return Values
 > Returns a PEM encoded certificate chain.

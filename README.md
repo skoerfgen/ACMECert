@@ -527,7 +527,9 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 
 > **`force_validation`**
 >
-> If `TRUE` it is ensured that the callback function is called for each domain and does not get skipped due to eventually already valid authorizations.
+> If `TRUE` it is ensured that the callback function is called for each domain and does not get skipped due to possibly already valid authorizations. This is achived by deactivating already valid authorizations before getting new ones.
+> 
+> Only use for testing not in production!
 
 ###### Return Values
 > Returns a PEM encoded certificate chain.

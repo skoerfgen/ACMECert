@@ -455,7 +455,7 @@ Get certificate-chain (certificate + the intermediate certificate).
 
 *This is what Apache >= 2.4.8 needs for [`SSLCertificateFile`](https://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile), and what Nginx needs for [`ssl_certificate`](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate).*
 ```php
-public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback, bool $force_validation = FALSE )
+public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback, bool $authz_reuse = TRUE )
 ```
 ###### Parameters
 > **`pem`**
@@ -525,11 +525,11 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> dns-01 | TXT Resource Record Name | TXT Resource Record Value
 >> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
 
-> **`force_validation`**
+> **`authz_reuse`** (default: `TRUE`)
 >
-> If `TRUE` it is ensured that the callback function is called for each domain and does not get skipped due to possibly already valid authorizations. This is achieved by deactivating already valid authorizations before getting new ones.
+> If `FALSE` the callback function is always called for each domain and does not get skipped due to possibly already valid authorizations (authz) that get reused. This is achieved by deactivating already valid authorizations before getting new ones.
 > 
-> Only use for testing not in production!
+> > Hint: Under normal circumstances this is only needed when testing the callback function, not in production!
 
 ###### Return Values
 > Returns a PEM encoded certificate chain.

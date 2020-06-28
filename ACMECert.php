@@ -102,10 +102,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$this->log('Certificate revoked');
 	}
 
-	public function getCertificateChain($pem,$domain_config,$callback,$force_validation=false){
+	public function getCertificateChain($pem,$domain_config,$callback,$authz_reuse=true){
 		$domain_config=array_change_key_case($domain_config,CASE_LOWER);
 		$domains=array_keys($domain_config);
-		$deactivated=false;
+		$authz_deactivated=false;
 		
 		$this->getAccountID(); // get account info upfront to avoid mixed up logging order
 
@@ -124,7 +124,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$this->log('Order created: '.$order_location);
 
 		// === Authorization ===
-		if ($order['status']==='ready' && !$force_validation) {
+		if ($order['status']==='ready' && $authz_reuse) {
 			$this->log('All authorizations already valid, skipping validation altogether');
 		}else{
 			$groups=array();
@@ -143,12 +143,12 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				).$authorization['identifier']['value'];
 
 				if ($authorization['status']==='valid') {
-					if ($force_validation) {
-						$this->log('Authorization of '.$domain.' already valid, deactivating authorization');
-						$deactivated=true;
-						$this->deactivate($auth_url);
-					}else{
+					if ($authz_reuse) {
 						$this->log('Authorization of '.$domain.' already valid, skipping validation');
+					}else{
+						$this->log('Authorization of '.$domain.' already valid, deactivating authorization');
+						$this->deactivate($auth_url);
+						$authz_deactivated=true;
 					}
 					continue;
 				}
@@ -162,7 +162,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				][$domain]=array($auth_url,$authorization);
 			}
 			
-			if ($force_validation && $deactivated){
+			if ($authz_deactivated){
 				$this->log('Restarting Order after deactivating already valid authorizations');
 				return $this->getCertificateChain($pem,$domain_config,$callback);
 			}

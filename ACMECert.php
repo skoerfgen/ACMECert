@@ -102,29 +102,11 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$this->log('Certificate revoked');
 	}
 
-	public function getCertificateChain($pem,$domain_config,$callback){
+	public function getCertificateChain($pem,$domain_config,$callback,$authz_reuse=true){
 		$domain_config=array_change_key_case($domain_config,CASE_LOWER);
 		$domains=array_keys($domain_config);
-
-		// autodetect if Private Key or CSR is used
-		if ($key=openssl_pkey_get_private($pem)){ // Private Key detected
-			openssl_free_key($key);
-			$this->log('Generating CSR');
-			$csr=$this->generateCSR($pem,$domains);
-		}elseif(openssl_csr_get_subject($pem)){ // CSR detected
-			$this->log('Using provided CSR');
-			if (0===strpos($pem,'file://')) {
-				$csr=file_get_contents(substr($pem,7));
-				if (false===$csr) {
-					throw new Exception('Failed to read CSR from '.$pem.' ('.$this->get_openssl_error().')');
-				}
-			}else{
-				$csr=$pem;
-			}
-		}else{
-			throw new Exception('Could not load Private Key or CSR ('.$this->get_openssl_error().'): '.$pem);
-		}
-
+		$authz_deactivated=false;
+		
 		$this->getAccountID(); // get account info upfront to avoid mixed up logging order
 
 		// === Order ===
@@ -142,7 +124,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$this->log('Order created: '.$order_location);
 
 		// === Authorization ===
-		if ($order['status']==='ready') {
+		if ($order['status']==='ready' && $authz_reuse) {
 			$this->log('All authorizations already valid, skipping validation altogether');
 		}else{
 			$groups=array();
@@ -161,7 +143,13 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				).$authorization['identifier']['value'];
 
 				if ($authorization['status']==='valid') {
-					$this->log('Authorization of '.$domain.' already valid, skipping validation');
+					if ($authz_reuse) {
+						$this->log('Authorization of '.$domain.' already valid, skipping validation');
+					}else{
+						$this->log('Authorization of '.$domain.' already valid, deactivating authorization');
+						$this->deactivate($auth_url);
+						$authz_deactivated=true;
+					}
 					continue;
 				}
 
@@ -172,6 +160,11 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 					'|'.
 					ltrim($domain,'*.')
 				][$domain]=array($auth_url,$authorization);
+			}
+			
+			if ($authz_deactivated){
+				$this->log('Restarting Order after deactivating already valid authorizations');
+				return $this->getCertificateChain($pem,$domain_config,$callback);
 			}
 
 			// make sure dns-01 comes last to avoid DNS problems for other challenges
@@ -229,6 +222,25 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 					}
 				}
 			}
+		}
+		
+		// autodetect if Private Key or CSR is used
+		if ($key=openssl_pkey_get_private($pem)){ // Private Key detected
+			openssl_free_key($key);
+			$this->log('Generating CSR');
+			$csr=$this->generateCSR($pem,$domains);
+		}elseif(openssl_csr_get_subject($pem)){ // CSR detected
+			$this->log('Using provided CSR');
+			if (0===strpos($pem,'file://')) {
+				$csr=file_get_contents(substr($pem,7));
+				if (false===$csr) {
+					throw new Exception('Failed to read CSR from '.$pem.' ('.$this->get_openssl_error().')');
+				}
+			}else{
+				$csr=$pem;
+			}
+		}else{
+			throw new Exception('Could not load Private Key or CSR ('.$this->get_openssl_error().'): '.$pem);
 		}
 
 		$this->log('Finalizing Order');
@@ -650,7 +662,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v2.7 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v2.8 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

@@ -527,7 +527,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 
 > **`authz_reuse`** (default: `TRUE`)
 >
-> If `FALSE` the callback function is always called for each domain and does not get skipped due to possibly already valid authorizations (authz) that get reused. This is achieved by deactivating already valid authorizations before getting new ones.
+> If `FALSE` the callback function is always called for each domain and does not get skipped due to possibly already valid authorizations (authz) that are reused. This is achieved by deactivating already valid authorizations before getting new ones.
 > 
 > > Hint: Under normal circumstances this is only needed when testing the callback function, not in production!
 

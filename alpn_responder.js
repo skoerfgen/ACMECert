@@ -8,6 +8,9 @@ var server=tls.createServer({
 	ALPNProtocols:['acme-tls/1']
 }).on('listening',function(){
 	console.log('ACMECert Example ALPN Responder - Ready');
+}).on('secureConnection',function(socket){
+	socket.on('error',function(){
+	});
 }).listen(443);
 
 process.stdin.resume();

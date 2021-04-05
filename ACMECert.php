@@ -29,16 +29,33 @@
 class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encrypt (ACME v2)
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){
-		$this->log('Registering account');
-
-		$ret=$this->request('newAccount',array(
-			'termsOfServiceAgreed'=>(bool)$termsOfServiceAgreed,
-			'contact'=>$this->make_contacts_array($contacts)
-		));
-		$this->log($ret['code']==201?'Account registered':'Account already registered');
-		return $ret['body'];
+		return $this->_register($termsOfServiceAgreed,$contacts);
 	}
+	
+	public function registerEAB($termsOfServiceAgreed=false,$eab_kid,$eab_hmac,$contacts=array()){
+		if (!$this->resources) $this->readDirectory();
 
+		$protected=array(
+			'alg'=>'HS256',
+			'kid'=>$eab_kid,
+			'url'=>$this->resources['newAccount']
+		);
+		$payload=$this->jwk_header['jwk'];
+		
+		$protected64=$this->base64url(json_encode($protected,JSON_UNESCAPED_SLASHES));
+		$payload64=$this->base64url(json_encode($payload,JSON_UNESCAPED_SLASHES));
+		
+		$signature=hash_hmac('sha256',$protected64.'.'.$payload64,$this->base64url_decode($eab_hmac),true);
+		
+		return $this->_register($termsOfServiceAgreed,$contacts,array(
+			'externalAccountBinding'=>array(
+				'protected'=>$protected64,
+				'payload'=>$payload64,
+				'signature'=>$this->base64url($signature)
+			)
+		));
+	}
+	
 	public function update($contacts=array()){
 		$this->log('Updating account');
 		$ret=$this->request($this->getAccountID(),array(
@@ -353,6 +370,17 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		return $out;
 	}
 
+	private function _register($termsOfServiceAgreed=false,$contacts=array(),$extra=array()){
+		$this->log('Registering account');
+
+		$ret=$this->request('newAccount',array(
+			'termsOfServiceAgreed'=>(bool)$termsOfServiceAgreed,
+			'contact'=>$this->make_contacts_array($contacts)
+		)+$extra);
+		$this->log($ret['code']==201?'Account registered':'Account already registered');
+		return $ret['body'];
+	}
+	
 	private function parse_challenges($authorization,$type,&$url){
 		foreach($authorization['challenges'] as $challenge){
 			if ($challenge['type']!=$type) continue;
@@ -455,10 +483,14 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce,$mode;
+		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce;
 
 	public function __construct($live=true){
-		$this->directory=$this->directories[$this->mode=($live?'live':'staging')];
+		if (is_string($live)) {
+			$this->directory=$live;
+		}else{
+			$this->directory=$this->directories[$live?'live':'staging'];
+		}
 	}
 
 	public function __destruct(){
@@ -551,19 +583,23 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return $token.'.'.$this->thumbprint;
 	}
 
+	protected function readDirectory(){
+		$this->log('Initializing ACME v2 environment: '.$this->directory);
+		$ret=$this->http_request($this->directory); // Read ACME Directory
+		if (!is_array($ret['body'])) {
+			throw new Exception('Failed to read directory: '.$this->directory);
+		}
+		$this->resources=$ret['body']; // store resources for later use
+		$this->log('Initialized');
+	}
+
 	protected function request($type,$payload='',$retry=false){
 		if (!$this->jwk_header) {
 			throw new Exception('use loadAccountKey to load an account key');
 		}
 
 		if (!$this->resources){
-			$this->log('Initializing ACME v2 '.$this->mode.' environment');
-			$ret=$this->http_request($this->directory); // Read ACME Directory
-			if (!is_array($ret['body'])) {
-				throw new Exception('Failed to read directory: '.$this->directory);
-			}
-			$this->resources=$ret['body']; // store resources for later use
-			$this->log('Initialized');
+			$this->readDirectory();
 		}
 
 		if (0===stripos($type,'http')) {
@@ -607,9 +643,8 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		$protected['url']=$this->resources[$type];
-
-		$protected64=$this->base64url(json_encode($protected));
-		$payload64=$this->base64url(is_string($payload)?$payload:json_encode($payload));
+		$protected64=$this->base64url(json_encode($protected,JSON_UNESCAPED_SLASHES));
+		$payload64=$this->base64url(is_string($payload)?$payload:json_encode($payload,JSON_UNESCAPED_SLASHES));
 
 		if (false===openssl_sign(
 			$protected64.'.'.$payload64,
@@ -619,7 +654,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		)){
 			throw new Exception('Failed to sign payload !'.' ('.$this->get_openssl_error().')');
 		}
-
+		
 		return array(
 			'protected'=>$protected64,
 			'payload'=>$payload64,
@@ -642,6 +677,10 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return rtrim(strtr(base64_encode($data),'+/','-_'),'=');
 	}
 	
+	protected function base64url_decode($data){
+		return base64_decode(strtr($data,'-_','+/'));
+	}
+	
 	private function json_decode($str){
 		$ret=json_decode($str,true);
 		if ($ret===null) {
@@ -662,7 +701,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v2.8 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v2.8_EAB (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

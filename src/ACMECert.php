@@ -26,6 +26,10 @@
 
 // https://github.com/skoerfgen/ACMECert
 
+namespace skoerfgen\ACMECert;
+use Exception;
+use stdClass;
+
 class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encrypt (ACME v2)
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){
@@ -106,7 +110,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$domain_config=array_change_key_case($domain_config,CASE_LOWER);
 		$domains=array_keys($domain_config);
 		$authz_deactivated=false;
-		
+
 		$this->getAccountID(); // get account info upfront to avoid mixed up logging order
 
 		// === Order ===
@@ -161,7 +165,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 					ltrim($domain,'*.')
 				][$domain]=array($auth_url,$authorization);
 			}
-			
+
 			if ($authz_deactivated){
 				$this->log('Restarting Order after deactivating already valid authorizations');
 				return $this->getCertificateChain($pem,$domain_config,$callback);
@@ -223,7 +227,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				}
 			}
 		}
-		
+
 		// autodetect if Private Key or CSR is used
 		if ($key=openssl_pkey_get_private($pem)){ // Private Key detected
 			openssl_free_key($key);
@@ -299,14 +303,14 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		openssl_free_key($key);
 		return $pem;
 	}
-	
+
 	public function generateRSAKey($bits=2048){
 		return $this->generateKey(array(
 			'private_key_bits'=>$bits,
 			'private_key_type'=>OPENSSL_KEYTYPE_RSA
 		));
 	}
-	
+
 	public function generateECKey($curve_name='P-384'){
 		if (version_compare(PHP_VERSION,'7.1.0')<0) throw new Exception('PHP >= 7.1.0 required for EC keys !');
 		$map=array('P-256'=>'prime256v1','P-384'=>'secp384r1','P-521'=>'secp521r1');
@@ -316,7 +320,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			'private_key_type'=>OPENSSL_KEYTYPE_EC
 		));
 	}
-	
+
 	public function parseCertificate($cert_pem){
 		if (false===($ret=openssl_x509_read($cert_pem))) {
 			throw new Exception('Could not load certificate: '.$cert_pem.' ('.$this->get_openssl_error().')');
@@ -539,7 +543,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$out[]=openssl_error_string();
 		return implode(' | ',$out);
 	}
-	
+
 	protected function getAccount(){
 		$this->log('Getting account info');
 		$ret=$this->request('newAccount',array('onlyReturnExisting'=>true));
@@ -590,7 +594,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 		return $ret;
 	}
-	
+
 	protected function jws_encapsulate($type,$payload,$is_inner_jws=false){ // RFC7515
 		if ($type==='newAccount' || $is_inner_jws) {
 			$protected=$this->jwk_header;
@@ -626,7 +630,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			'signature'=>$this->base64url($this->jwk_header['alg'][0]=='R'?$signature:$this->asn2signature($signature,ceil($this->bits/8)))
 		);
 	}
-	
+
 	private function asn2signature($asn,$pad_len){
 		if ($asn[0]!=="\x30") throw new Exception('ASN.1 SEQUENCE not found !');
 		$asn=substr($asn,$asn[1]==="\x81"?3:2);
@@ -637,11 +641,11 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$S=ltrim(substr($asn,2,ord($asn[1])),"\x00");
 		return str_pad($R,$pad_len,"\x00",STR_PAD_LEFT).str_pad($S,$pad_len,"\x00",STR_PAD_LEFT);
 	}
-	
+
 	protected function base64url($data){ // RFC7515 - Appendix C
 		return rtrim(strtr(base64_encode($data),'+/','-_'),'=');
 	}
-	
+
 	private function json_decode($str){
 		$ret=json_decode($str,true);
 		if ($ret===null) {
@@ -702,7 +706,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			if ($body===false) throw new Exception('HTTP Request Error: '.$this->get_openssl_error());
 			$headers=$http_response_header;
 		}
-		
+
 		$headers=array_reduce( // parse http response headers into array
 			array_filter($headers,function($item){ return trim($item)!=''; }),
 			function($carry,$item)use(&$code){

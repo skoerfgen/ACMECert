@@ -14,7 +14,8 @@
     "source": "https://github.com/skoerfgen/ACMECert"
   },
 	"require": {
-		"php": ">=5.6.0"
+		"php": ">=5.6.0",
+    "ext-openssl": "*"
   },
   "autoload": {
     "psr-4": {

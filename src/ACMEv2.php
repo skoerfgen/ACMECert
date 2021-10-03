@@ -44,12 +44,12 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	}
 
 	public function __destruct(){
-		if ($this->account_key) openssl_pkey_free($this->account_key);
+		if (PHP_MAJOR_VERSION<8 && $this->account_key) openssl_pkey_free($this->account_key);
 		if ($this->ch) curl_close($this->ch);
 	}
 
 	public function loadAccountKey($account_key_pem){
-		if ($this->account_key) openssl_pkey_free($this->account_key);
+		if (PHP_MAJOR_VERSION<8 && $this->account_key) openssl_pkey_free($this->account_key);
 		if (false===($this->account_key=openssl_pkey_get_private($account_key_pem))){
 			throw new Exception('Could not load account key: '.$account_key_pem.' ('.$this->get_openssl_error().')');
 		}
@@ -244,7 +244,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v2.8 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v2.8.1 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

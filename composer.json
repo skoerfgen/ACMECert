@@ -1,6 +1,6 @@
 {
   "name": "skoerfgen/acmecert",
-  "version": "2.8",
+  "version": "3.0.0",
   "description": "PHP client library for Let's Encrypt (ACME v2)",
   "license": "MIT",
   "authors": [
@@ -15,8 +15,10 @@
   },
   "require": {
     "php": ">=5.6.0",
-    "ext-openssl": "*",
-    "ext-curl": "*"
+    "ext-openssl": "*"
+  },
+  "suggest": {
+    "ext-curl": "Optional for http requests"
   },
   "autoload": {
     "psr-4": {

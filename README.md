@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555))
-Version: 2.8.1
+Version: 3.0.0
 
 ## Description
 
@@ -47,31 +47,37 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded 
 - [x] [OpenSSL extension](https://www.php.net/manual/de/book.openssl.php)
 - [x] enabled [fopen wrappers](https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-fopen) (allow_url_fopen=1) **or** [cURL extension](https://www.php.net/manual/en/book.curl.php)
 
-## Installation
+## Require ACMECert
 
-You can install this plugin into your application using
-[composer](https://getcomposer.org):
+manual installation:
 
 ```
-  composer require skoerfgen/acmecert
+git clone https://github.com/skoerfgen/ACMECert
 ```
+usage:
 
-## Usage Examples
-
-#### Require ACMECert
 ```php
 require 'ACMECert.php';
 
 use skoerfgen\ACMECert\ACMECert;
 ```
 
-Or with composer require:
+---
+
+or install it using [composer](https://getcomposer.org):
+```
+  composer require skoerfgen/acmecert
+```
+
+usage:
+
 ```php
 require 'vendor/autoload.php';
 
 use skoerfgen\ACMECert\ACMECert;
 ```
 
+## Usage Examples
 
 #### Choose Live or Staging Environment
 > Live
@@ -482,7 +488,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 > A Private Key used for the certificate (the needed CSR is generated automatically using the given key in this case) or an already existing CSR in one of the following formats:
 >
 > * a string containing a PEM formatted private key.
-> * a string beginning with `file://` containing the filename to read a PEM encoded private key from.
+> * a string beginning with `file://` containing the filename to read a PEM encoded private key from.  
 >   or
 > * a string beginning with `file://` containing the filename to read a PEM encoded CSR from.
 > * a string containing the content of a CSR, PEM encoded, may start with `-----BEGIN CERTIFICATE REQUEST-----`

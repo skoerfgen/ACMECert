@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555))  
-Version: 2.8.1
+Version: 3.0.0
 
 ## Description
 
@@ -47,12 +47,37 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded 
 - [x] [OpenSSL extension](https://www.php.net/manual/de/book.openssl.php)
 - [x] enabled [fopen wrappers](https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-fopen) (allow_url_fopen=1) **or** [cURL extension](https://www.php.net/manual/en/book.curl.php)
 
-## Usage Examples
+## Require ACMECert
 
-#### Require ACMECert
+manual installation:
+
+```
+git clone https://github.com/skoerfgen/ACMECert
+```
+usage:
+
 ```php
 require 'ACMECert.php';
+
+use skoerfgen\ACMECert\ACMECert;
 ```
+
+---
+
+or install it using [composer](https://getcomposer.org):
+```
+  composer require skoerfgen/acmecert
+```
+
+usage:
+
+```php
+require 'vendor/autoload.php';
+
+use skoerfgen\ACMECert\ACMECert;
+```
+
+## Usage Examples
 
 #### Choose Live or Staging Environment
 > Live
@@ -528,7 +553,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 > **`authz_reuse`** (default: `TRUE`)
 >
 > If `FALSE` the callback function is always called for each domain and does not get skipped due to possibly already valid authorizations (authz) that are reused. This is achieved by deactivating already valid authorizations before getting new ones.
-> 
+>
 > > Hint: Under normal circumstances this is only needed when testing the callback function, not in production!
 
 ###### Return Values

@@ -244,7 +244,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 		}
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v3.0.0 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v3.1.0 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();
@@ -294,7 +294,14 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 					$carry=array();
 				}else{
 					list($k,$v)=$parts;
-					$carry[strtolower(trim($k))]=trim($v);
+					$k=strtolower(trim($k));
+					if ($k==='link'){
+						if (preg_match('/<(.*)>\s*;\s*rel=\"(.*)\"/',$v,$matches)){
+							$carry[$k][$matches[2]][]=trim($matches[1]);
+						}
+					}else{
+						$carry[$k]=trim($v);
+					}
 				}
 				return $carry;
 			},

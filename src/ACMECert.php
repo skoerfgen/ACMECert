@@ -33,6 +33,7 @@ use Exception;
 use stdClass;
 
 class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encrypt (ACME v2)
+	private $alternate_chains=array();
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){
 		$this->log('Registering account');
@@ -267,6 +268,19 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		throw new Exception('Order failed');
 	}
 
+	public function getCertificateChains($pem,$domain_config,$callback,$authz_reuse=true){
+		$default_chain=$this->getCertificateChain($pem,$domain_config,$callback,$authz_reuse);
+
+		$out=array();
+		$out[$this->getTopIssuerCN($default_chain)]=$default_chain;
+
+		foreach($this->alternate_chains as $link){
+			$chain=$this->request_certificate(array('certificate'=>$link),true);
+			$out[$this->getTopIssuerCN($chain)]=$chain;
+		}
+		return $out;
+	}
+
 	public function generateCSR($domain_key_pem,$domains){
 		if (false===($domain_key=openssl_pkey_get_private($domain_key_pem))){
 			throw new Exception('Could not load domain key: '.$domain_key_pem.' ('.$this->get_openssl_error().')');
@@ -401,11 +415,18 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		throw new Exception('Aborted after '.$max_tries.' tries');
 	}
 
-	private function request_certificate($ret){
-		$this->log('Requesting certificate-chain');
+	private function request_certificate($ret,$alternate=false){
+		$this->log('Requesting '.($alternate?'alternate':'default').' certificate-chain');
 		$ret=$this->request($ret['certificate'],'');
 		if ($ret['headers']['content-type']!=='application/pem-certificate-chain'){
 			throw new Exception('Unexpected content-type: '.$ret['headers']['content-type']);
+		}
+		if (!$alternate) {
+			if (isset($ret['headers']['link']['alternate'])){
+				$this->alternate_chains=$ret['headers']['link']['alternate'];
+			}else{
+				$this->alternate_chains=array();
+			}
 		}
 		$this->log('Certificate-chain retrieved');
 		return $ret['body'];
@@ -452,5 +473,20 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		return array_map(function($contact){
 			return 'mailto:'.$contact;
 		},$contacts);
+	}
+
+	private function getTopIssuerCN($chain){
+		$tmp=$this->splitChain($chain);
+		$ret=$this->parseCertificate(end($tmp));
+		return $ret['issuer']['CN'];
+	}
+
+	public function splitChain($chain){
+		$delim='-----END CERTIFICATE-----';
+		return array_map(function($item)use($delim){
+			return trim($item.$delim);
+		},array_filter(explode($delim,$chain),function($item){
+			return strpos($item,'-----BEGIN CERTIFICATE-----')!==false;
+		}));
 	}
 }

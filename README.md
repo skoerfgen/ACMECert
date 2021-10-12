@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555))  
-Version: 3.0.0
+Version: 3.1.0
 
 ## Description
 
@@ -18,7 +18,7 @@ It is self contained and contains a set of functions allowing you to:
 
 It abstacts away the complexity of the ACME protocol to get a certificate
 (create order, fetch authorizations, compute challenge tokens, polling for status, generate CSR,
-finalize order, request certificate) into a single function [getCertificateChain](#acmecertgetcertificatechain),
+finalize order, request certificate) into a single function [getCertificateChain](#acmecertgetcertificatechain) (or [getCertificateChains](#acmecertgetcertificatechains) to also get all alternate chains),
 where you specify a set of domains you want to get a certificate for and which challenge type to use (all [challenge types](https://letsencrypt.org/docs/challenge-types/) are supported).
 This function takes as third argument a user-defined callback function which gets
 invoked every time a challenge needs to be fulfilled. It is up to you to set/remove the challenge tokens:
@@ -171,6 +171,15 @@ $fullchain=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_con
 file_put_contents('fullchain.pem',$fullchain);
 ```
 
+#### Get alternate chains
+```php
+$ret=$ac->getCertificateChains('file://'.'cert_private_key.pem',$domain_config,$handler);
+if (isset[$ret['ISRG Root X1']]){ // use alternate chain 'ISRG Root X1'
+  file_put_contents('fullchain.pem',$ret['ISRG Root X1']);
+}else{ // use default chain if 'ISRG Root X1' is not present
+  file_put_contents('fullchain.pem',reset($ret));
+}
+```
 
 #### Get Certificate using all (`http-01`,`dns-01` and `tls-alpn-01`) challenge types together
 ```php
@@ -476,7 +485,7 @@ public array ACMECert::deactivateAccount()
 
 ### ACMECert::getCertificateChain
 
-Get certificate-chain (certificate + the intermediate certificate).
+Get certificate-chain (certificate + the intermediate certificate(s)).
 
 *This is what Apache >= 2.4.8 needs for [`SSLCertificateFile`](https://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile), and what Nginx needs for [`ssl_certificate`](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate).*
 ```php
@@ -560,6 +569,23 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 > Returns a PEM encoded certificate chain.
 ###### Errors/Exceptions
 > Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured obtaining the certificate.
+
+---
+
+### ACMECert::getCertificateChains
+
+Get all (default and alternate) certificate-chains.
+This function takes the same arguments as the [getCertificateChain](#acmecertgetcertificatechain) function above, but it returns an array of certificate chains instead of a single chain.
+
+
+###### Return Values
+> Returns an array of PEM encoded certificate chains.
+>
+> The keys of the returned array correspond to the issuer `Common Name` (CN) of the topmost (closest to the root certificate) intermediate certificate.
+>
+> The first element of the returned array is the default chain.
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured obtaining the certificate chains.
 
 ---
 
@@ -671,6 +697,22 @@ public float ACMECert::getRemainingDays ( mixed $pem )
 > Returns how many days the certificate is still valid.
 ###### Errors/Exceptions
 > Throws an `Exception` if the certificate could not be parsed.
+
+---
+
+### ACMECert::splitChain
+
+Split a string containing a PEM encoded certificate chain into an array of individual certificates.
+```php
+public array ACMECert::splitChain ( string $pem )
+```
+###### Parameters
+> **`pem`**
+> * a certificate-chain as string, PEM encoded.
+###### Return Values
+> Returns an array of PEM encoded individual certificates.
+###### Errors/Exceptions
+> None
 
 ---
 

@@ -278,6 +278,8 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			$chain=$this->request_certificate(array('certificate'=>$link),true);
 			$out[$this->getTopIssuerCN($chain)]=$chain;
 		}
+
+		$this->log('Received '.count($out).' chains: '.implode(', ',array_keys($out)));
 		return $out;
 	}
 

@@ -27,6 +27,7 @@
 // https://github.com/skoerfgen/ACMECert
 
 namespace skoerfgen\ACMECert;
+
 use skoerfgen\ACMECert\ACMEv2;
 use skoerfgen\ACMECert\ACME_Exception;
 use Exception;
@@ -204,7 +205,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 					foreach($pending_challenges as $arr){
 						list($remove_cb,$opts,$challenge_url,$auth_url)=$arr;
 						$this->log('Notifying server for validation of '.$opts['domain']);
-						$this->request($challenge_url,new StdClass);
+						$this->request($challenge_url,new stdClass);
 
 						$this->log('Waiting for server challenge validation');
 						sleep(1);
@@ -278,6 +279,8 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			$chain=$this->request_certificate(array('certificate'=>$link),true);
 			$out[$this->getTopIssuerCN($chain)]=$chain;
 		}
+
+		$this->log('Received '.count($out).' chains: '.implode(', ',array_keys($out)));
 		return $out;
 	}
 

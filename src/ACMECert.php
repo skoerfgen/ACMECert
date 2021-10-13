@@ -204,7 +204,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 					foreach($pending_challenges as $arr){
 						list($remove_cb,$opts,$challenge_url,$auth_url)=$arr;
 						$this->log('Notifying server for validation of '.$opts['domain']);
-						$this->request($challenge_url,new StdClass);
+						$this->request($challenge_url,new stdClass);
 
 						$this->log('Waiting for server challenge validation');
 						sleep(1);

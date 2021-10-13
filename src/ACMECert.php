@@ -233,7 +233,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 		// autodetect if Private Key or CSR is used
 		if ($key=openssl_pkey_get_private($pem)){ // Private Key detected
-			openssl_free_key($key);
+			if (PHP_MAJOR_VERSION<8) openssl_free_key($key);
 			$this->log('Generating CSR');
 			$csr=$this->generateCSR($pem,$domains);
 		}elseif(openssl_csr_get_subject($pem)){ // CSR detected
@@ -294,7 +294,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			'digest_alg'=>'sha512'
 		));
 		unlink($fn);
-		openssl_free_key($domain_key);
+		if (PHP_MAJOR_VERSION<8) openssl_free_key($domain_key);
 
 		if (false===$csr) {
 			throw new Exception('Could not generate CSR ! ('.$this->get_openssl_error().')');
@@ -316,7 +316,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			throw new Exception('Could not export private key ! ('.$this->get_openssl_error().')');
 		}
 		unlink($fn);
-		openssl_free_key($key);
+		if (PHP_MAJOR_VERSION<8) openssl_free_key($key);
 		return $pem;
 	}
 

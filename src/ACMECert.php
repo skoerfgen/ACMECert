@@ -27,6 +27,7 @@
 // https://github.com/skoerfgen/ACMECert
 
 namespace skoerfgen\ACMECert;
+
 use skoerfgen\ACMECert\ACMEv2;
 use skoerfgen\ACMECert\ACME_Exception;
 use Exception;

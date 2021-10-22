@@ -173,12 +173,13 @@ file_put_contents('fullchain.pem',$fullchain);
 
 #### Get alternate chains
 ```php
-$ret=$ac->getCertificateChains('file://'.'cert_private_key.pem',$domain_config,$handler);
-if (isset[$ret['ISRG Root X1']]){ // use alternate chain 'ISRG Root X1'
-  file_put_contents('fullchain.pem',$ret['ISRG Root X1']);
+$chains=$ac->getCertificateChains('file://'.'cert_private_key.pem',$domain_config,$handler);
+if (isset($chains['ISRG Root X1'])){ // use alternate chain 'ISRG Root X1'
+  $fullchain=$chains['ISRG Root X1'];
 }else{ // use default chain if 'ISRG Root X1' is not present
-  file_put_contents('fullchain.pem',reset($ret));
+  $fullchain=reset($chains);
 }
+file_put_contents('fullchain.pem',$fullchain);
 ```
 
 #### Get Certificate using all (`http-01`,`dns-01` and `tls-alpn-01`) challenge types together

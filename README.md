@@ -270,16 +270,15 @@ ini_set('error_log',dirname(__FILE__).'/ACMECert.log');
 
 ## ACME_Exception
 
-If the ACME-Server responded with an error message an `ACME_Exception` is thrown. (ACME_Exception extends Exception)
+If the ACME-Server responded with an error message an `\skoerfgen\ACMECert\ACME_Exception` is thrown. (ACME_Exception extends Exception)
 
 `ACME_Exception` has two additional functions:
 
 * `getType()` to get the ACME error code:
 
 ```php
-require 'ACMECert.php';
-$ac=new ACMECert();
-$ac->loadAccountKey('file://'.'account_key.pem');
+use skoerfgen\ACMECert\ACME_Exception;
+
 try {
   echo $ac->getAccountID().PHP_EOL;
 }catch(ACME_Exception $e){
@@ -295,12 +294,12 @@ try {
 
 ```php
 try {
-	$cert=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
-} catch (ACME_Exception $e){
-	$ac->log($e->getMessage()); // log original error
-	foreach($e->getSubproblems() as $subproblem){
-		$ac->log($subproblem->getMessage()); // log sub errors
-	}
+  $cert=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
+} catch (\skoerfgen\ACMECert\ACME_Exception $e){
+  $ac->log($e->getMessage()); // log original error
+  foreach($e->getSubproblems() as $subproblem){
+    $ac->log($subproblem->getMessage()); // log sub errors
+  }
 }
 ```
 

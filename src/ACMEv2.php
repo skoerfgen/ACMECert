@@ -325,17 +325,13 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			switch($headers['content-type']){
 				case 'application/json':
 					$body=$this->json_decode($body);
+					if (isset($body['error'])) {
+						$this->handleError($body['error']);
+					}
 				break;
 				case 'application/problem+json':
 					$body=$this->json_decode($body);
-					throw new ACME_Exception($body['type'],$body['detail'],
-						array_map(function($subproblem){
-							return new ACME_Exception(
-								$subproblem['type'],
-								'"'.$subproblem['identifier']['value'].'": '.$subproblem['detail']
-							);
-						},isset($body['subproblems'])?$body['subproblems']:array())
-					);
+					$this->handleError($body);
 				break;
 			}
 		}
@@ -352,4 +348,22 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 		return $ret;
 	}
+
+	private function handleError($error){
+		if ($error['type']==='compound' && isset($error['subproblems'][0])) {
+			$error['type']=$error['subproblems'][0]['type'];
+			$error['detail']=$error['subproblems'][0]['detail'];
+		}
+
+		throw new ACME_Exception($error['type'],$error['detail'],
+			array_map(function($subproblem){
+				return new ACME_Exception(
+					$subproblem['type'],
+					(isset($subproblem['identifier']['value'])?
+						'"'.$subproblem['identifier']['value'].'": ':'').$subproblem['detail']
+				);
+			},isset($error['subproblems'])?$error['subproblems']:array())
+		);
+	}
+
 }

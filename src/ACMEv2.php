@@ -37,10 +37,14 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce,$mode;
+		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce;
 
 	public function __construct($live=true){
-		$this->directory=$this->directories[$this->mode=($live?'live':'staging')];
+		if (is_bool($live)) {
+			$this->directory=$this->directories[$live?'live':'staging'];
+		}else{
+			$this->directory=$live;
+		}
 	}
 
 	public function __destruct(){

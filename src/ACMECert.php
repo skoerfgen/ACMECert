@@ -111,6 +111,14 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		return $this->resources['meta']['termsOfService'];
 	}
 
+	public function getCAAIdentities(){
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['meta']['caaIdentities'])){
+			throw new Exception('Failed to get CAA Identities');
+		}
+		return $this->resources['meta']['caaIdentities'];
+	}
+
 	public function keyChange($new_account_key_pem){ // account key roll-over
 		$ac2=new ACMEv2();
 		$ac2->loadAccountKey($new_account_key_pem);

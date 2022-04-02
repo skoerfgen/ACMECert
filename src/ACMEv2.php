@@ -192,8 +192,8 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 		$protected['url']=$this->resources[$type];
 
-		$protected64=$this->base64url(json_encode($protected));
-		$payload64=$this->base64url(is_string($payload)?$payload:json_encode($payload));
+		$protected64=$this->base64url(json_encode($protected,JSON_UNESCAPED_SLASHES));
+		$payload64=$this->base64url(is_string($payload)?$payload:json_encode($payload,JSON_UNESCAPED_SLASHES));
 
 		if (false===openssl_sign(
 			$protected64.'.'.$payload64,

@@ -140,7 +140,15 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	protected function readDirectory(){
 		$this->log('Initializing ACME v2 environment: '.$this->directory);
 		$ret=$this->http_request($this->directory); // Read ACME Directory
-		if (!is_array($ret['body'])) {
+		if (
+			!is_array($ret['body']) ||
+			!empty(
+				array_diff_key(
+					array_flip(array('newNonce','newAccount','newOrder')),
+					$ret['body']
+				)
+			)
+		){
 			throw new Exception('Failed to read directory: '.$this->directory);
 		}
 		$this->resources=$ret['body']; // store resources for later use

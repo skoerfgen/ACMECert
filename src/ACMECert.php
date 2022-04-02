@@ -37,12 +37,40 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 	private $alternate_chains=array();
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){
+		return $this->_register($termsOfServiceAgreed,$contacts);
+	}
+
+	public function registerEAB($termsOfServiceAgreed=false,$eab_kid,$eab_hmac,$contacts=array()){
+		if (!$this->resources) $this->readDirectory();
+
+		$protected=array(
+			'alg'=>'HS256',
+			'kid'=>$eab_kid,
+			'url'=>$this->resources['newAccount']
+		);
+		$payload=$this->jwk_header['jwk'];
+
+		$protected64=$this->base64url(json_encode($protected,JSON_UNESCAPED_SLASHES));
+		$payload64=$this->base64url(json_encode($payload,JSON_UNESCAPED_SLASHES));
+
+		$signature=hash_hmac('sha256',$protected64.'.'.$payload64,$this->base64url_decode($eab_hmac),true);
+
+		return $this->_register($termsOfServiceAgreed,$contacts,array(
+			'externalAccountBinding'=>array(
+				'protected'=>$protected64,
+				'payload'=>$payload64,
+				'signature'=>$this->base64url($signature)
+			)
+		));
+	}
+
+	private function _register($termsOfServiceAgreed=false,$contacts=array(),$extra=array()){
 		$this->log('Registering account');
 
 		$ret=$this->request('newAccount',array(
 			'termsOfServiceAgreed'=>(bool)$termsOfServiceAgreed,
 			'contact'=>$this->make_contacts_array($contacts)
-		));
+		)+$extra);
 		$this->log($ret['code']==201?'Account registered':'Account already registered');
 		return $ret['body'];
 	}

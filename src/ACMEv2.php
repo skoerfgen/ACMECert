@@ -133,20 +133,22 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return $token.'.'.$this->thumbprint;
 	}
 
+	protected function readDirectory(){
+		$this->log('Initializing ACME v2 environment: '.$this->directory);
+		$ret=$this->http_request($this->directory); // Read ACME Directory
+		if (!is_array($ret['body'])) {
+			throw new Exception('Failed to read directory: '.$this->directory);
+		}
+		$this->resources=$ret['body']; // store resources for later use
+		$this->log('Initialized');
+	}
+
 	protected function request($type,$payload='',$retry=false){
 		if (!$this->jwk_header) {
 			throw new Exception('use loadAccountKey to load an account key');
 		}
 
-		if (!$this->resources){
-			$this->log('Initializing ACME v2 '.$this->mode.' environment');
-			$ret=$this->http_request($this->directory); // Read ACME Directory
-			if (!is_array($ret['body'])) {
-				throw new Exception('Failed to read directory: '.$this->directory);
-			}
-			$this->resources=$ret['body']; // store resources for later use
-			$this->log('Initialized');
-		}
+		if (!$this->resources) $this->readDirectory();
 
 		if (0===stripos($type,'http')) {
 			$this->resources['_tmp']=$type;
@@ -222,6 +224,10 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 	protected function base64url($data){ // RFC7515 - Appendix C
 		return rtrim(strtr(base64_encode($data),'+/','-_'),'=');
+	}
+
+	protected function base64url_decode($data){
+		return base64_decode(strtr($data,'-_','+/'));
 	}
 
 	private function json_decode($str){

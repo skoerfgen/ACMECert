@@ -103,6 +103,14 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		return $ret['body'];
 	}
 
+	public function getTermsURL(){
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['meta']['termsOfService'])){
+			throw new Exception('Failed to get Terms Of Service URL');
+		}
+		return $this->resources['meta']['termsOfService'];
+	}
+
 	public function keyChange($new_account_key_pem){ // account key roll-over
 		$ac2=new ACMEv2();
 		$ac2->loadAccountKey($new_account_key_pem);

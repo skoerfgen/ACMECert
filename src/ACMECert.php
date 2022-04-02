@@ -394,6 +394,21 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		return $ret;
 	}
 
+	public function getSAN($pem){
+		$ret=$this->parseCertificate($pem);
+		if (!isset($ret['extensions']['subjectAltName'])){
+			throw new Exception('No Subject Alternative Name (SAN) found in certificate');
+		}
+		$out=array();
+		foreach(explode(',',$ret['extensions']['subjectAltName']) as $line){
+			list($type,$name)=array_map('trim',explode(':',$line));
+			if ($type==='DNS'){
+				$out[]=$name;
+			}
+		}
+		return $out;
+	}
+
 	public function getRemainingDays($cert_pem){
 		$ret=$this->parseCertificate($cert_pem);
 		return ($ret['validTo_time_t']-time())/86400;

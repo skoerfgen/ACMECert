@@ -369,7 +369,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 	public function generateRSAKey($bits=2048){
 		return $this->generateKey(array(
-			'private_key_bits'=>$bits,
+			'private_key_bits'=>(int)$bits,
 			'private_key_type'=>OPENSSL_KEYTYPE_RSA
 		));
 	}

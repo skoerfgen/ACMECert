@@ -77,45 +77,49 @@ require 'vendor/autoload.php';
 use skoerfgen\ACMECert\ACMECert;
 ```
 
-## Usage Examples
+## Usage / Examples
 
 #### Choose Certificate Authority (CA)
-> Let's Encrypt - Live CA
+##### [Let's Encrypt](https://letsencrypt.org/)
+> Live CA - https://acme-v02.api.letsencrypt.org/directory
 ```php
-$ac=new ACMECert(); // https://acme-v02.api.letsencrypt.org/directory is used.
+$ac=new ACMECert();
 ```
 
-> Let's Encrypt - Staging CA
+> Staging CA - https://acme-staging-v02.api.letsencrypt.org/directory
 ```php
-$ac=new ACMECert(false); // https://acme-staging-v02.api.letsencrypt.org/directory is used.
+$ac=new ACMECert(false);
 ```
 
-> Buypass - Live CA
+##### [Buypass](https://buypass.com/)
+> Live CA
 ```php
 $ac=new ACMECert('https://api.buypass.com/acme/directory');
 ```
 
-> Buypass - Staging CA
+> Staging CA
 ```php
 $ac=new ACMECert('https://api.test4.buypass.no/acme/directory');
 ```
 
-> Google Trust Services - Live CA
+##### [Google Trust Services](https://pki.goog/)
+> Live CA
 ```php
 $ac=new ACMECert('https://dv.acme-v02.api.pki.goog/directory');
 ```
 
-> Google Trust Services - Staging CA
+> Staging CA
 ```php
 $ac=new ACMECert('https://dv.acme-v02.test-api.pki.goog/directory');
 ```
 
-> ZeroSSL - Live CA
+##### [ZeroSSL](https://zerossl.com/)
+> Live CA
 ```php
 $ac=new ACMECert('https://acme.zerossl.com/v2/DV90');
 ```
 
-> or any other ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555)) compatible CA
+##### or any other ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555)) compatible CA
 ```php
 $ac=new ACMECert('INSERT_URL_TO_AMCE_CA_DIRECTORY_HERE');
 ```

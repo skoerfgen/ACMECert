@@ -1,7 +1,7 @@
 # ACMECert
 
-PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555))  
-Version: 3.1.2
+PHP client library for [Let's Encrypt](https://letsencrypt.org/)  and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
+Version: 3.2.0
 
 ## Description
 
@@ -79,14 +79,45 @@ use skoerfgen\ACMECert\ACMECert;
 
 ## Usage Examples
 
-#### Choose Live or Staging Environment
-> Live
+#### Choose Certificate Authority (CA)
+> Let's Encrypt - Live CA
 ```php
-$ac=new ACMECert();
+$ac=new ACMECert(); // https://acme-v02.api.letsencrypt.org/directory is used.
 ```
-> Staging
+
+> Let's Encrypt - Staging CA
 ```php
-$ac=new ACMECert(false);
+$ac=new ACMECert(false); // https://acme-staging-v02.api.letsencrypt.org/directory is used.
+```
+
+> Buypass - Live CA
+```php
+$ac=new ACMECert('https://api.buypass.com/acme/directory');
+```
+
+> Buypass - Staging CA
+```php
+$ac=new ACMECert('https://api.test4.buypass.no/acme/directory');
+```
+
+> Google Trust Services - Live CA
+```php
+$ac=new ACMECert('https://dv.acme-v02.api.pki.goog/directory');
+```
+
+> Google Trust Services - Staging CA
+```php
+$ac=new ACMECert('https://dv.acme-v02.test-api.pki.goog/directory');
+```
+
+> ZeroSSL - Live CA
+```php
+$ac=new ACMECert('https://acme.zerossl.com/v2/DV90');
+```
+
+> or any other ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555)) compatible CA
+```php
+$ac=new ACMECert('INSERT_URL_TO_AMCE_CA_DIRECTORY_HERE');
 ```
 
 #### Generate RSA Private Key
@@ -103,14 +134,19 @@ file_put_contents('account_key.pem',$key);
 ```
 > Equivalent to: `openssl ecparam -name secp384r1 -genkey -noout -out account_key.pem`
 
-#### Register Account Key with Let's Encrypt
+#### Register Account Key with CA
 ```php
 $ac->loadAccountKey('file://'.'account_key.pem');
 $ret=$ac->register(true,'info@example.com');
 print_r($ret);
 ```
 
-> **WARNING: By passing **TRUE** as first parameter of the register function you agree to the terms of service of Let's Encrypt. See [Let’s Encrypt Subscriber Agreement](https://letsencrypt.org/repository/) for more information.**
+#### Register Account Key with CA using External Account Binding
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ret=$ac->registerEAB(true,'INSERT_EAB_KEY_ID_HERE','INSERT_EAB_HMAC_HERE','info@example.com');
+print_r($ret);
+```
 
 #### Get Account Information
 ```php
@@ -309,12 +345,17 @@ try {
 
 Creates a new ACMECert instance.
 ```php
-public ACMECert::__construct ( bool $live = TRUE )
+public ACMECert::__construct ( mixed $ca_url = TRUE )
 ```
 ###### Parameters
-> **`live`**
+> **`ca_url`**
 >
-> When **FALSE**, the ACME v2 [staging environment](https://acme-staging-v02.api.letsencrypt.org/) is used otherwise the [live environment](https://acme-v02.api.letsencrypt.org/).
+> can be one of the following:
+>
+> * a boolean:  
+> when `TRUE` the Let's Encrypt - Live CA (https://acme-v02.api.letsencrypt.org/directory) is used.  
+> when `FALSE` the Let's Encrypt - Staging CA (https://acme-staging-v02.api.letsencrypt.org/directory) is used.
+> * a string containing the URL to an ACME CA directory endpoint.
 
 ###### Return Values
 > Returns a new ACMECert instance.
@@ -381,16 +422,50 @@ public void ACMECert::loadAccountKey ( mixed $account_key_pem )
 
 ### ACMECert::register
 
-Associate the loaded account key with a Let's Encrypt account and optionally specify contacts.
+Associate the loaded account key with the CA account and optionally specify contacts.
 ```php
 public array ACMECert::register ( bool $termsOfServiceAgreed = FALSE [, mixed $contacts = array() ] )
 ```
 ###### Parameters
 > **`termsOfServiceAgreed`**
 >
-> **WARNING: By passing `TRUE`, you agree to the terms of service of Let's Encrypt. See [Let’s Encrypt Subscriber Agreement](https://letsencrypt.org/repository/) for more information.**
+> By passing `TRUE`, you agree to the Terms Of Service of the selected CA. (Must be set to `TRUE` in order to successully register an account.)
 >
-> Must be set to **TRUE** in order to successully register an account.
+> Hint: Use [getTermsURL()](#acmecertgettermsurl) to get the link to the current Terms Of Service.
+
+
+> **`contacts`**
+>
+> can be one of the following:
+> 1. A string containing an e-mail address
+> 2. Array of e-mail adresses
+###### Return Values
+> Returns an array containing the account information.
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other registration error occured.
+
+---
+
+### ACMECert::registerEAB
+
+Associate the loaded account key with the CA account using External Account Binding (EAB) credentials and optionally specify contacts.
+```php
+public array ACMECert::registerEAB ( bool $termsOfServiceAgreed = FALSE, string $eab_kid, string $eab_hmac [, mixed $contacts = array() ] )
+```
+###### Parameters
+> **`termsOfServiceAgreed`**
+>
+> By passing `TRUE`, you agree to the Terms Of Service of the selected CA. (Must be set to `TRUE` in order to successully register an account.)
+>
+> Hint: Use [getTermsURL()](#acmecertgettermsurl) to get the link to the current Terms Of Service.
+
+> **`eab_kid`**
+>
+> a string specifying the `EAB Key Identifier`
+
+> **`eab_hmac`**
+>
+> a string specifying the `EAB HMAC Key`
 
 > **`contacts`**
 >
@@ -577,6 +652,9 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 Get all (default and alternate) certificate-chains.
 This function takes the same arguments as the [getCertificateChain](#acmecertgetcertificatechain) function above, but it returns an array of certificate chains instead of a single chain.
 
+```php
+public string ACMECert::getCertificateChains ( mixed $pem, array $domain_config, callable $callback, bool $authz_reuse = TRUE )
+```
 
 ###### Return Values
 > Returns an array of PEM encoded certificate chains.
@@ -713,6 +791,54 @@ public array ACMECert::splitChain ( string $pem )
 > Returns an array of PEM encoded individual certificates.
 ###### Errors/Exceptions
 > None
+
+---
+
+### ACMECert::getCAAIdentities
+
+Get a list of all CAA Identities for the selected CA. (Useful for setting up CAA DNS Records)
+```php
+public array ACMECert::getCAAIdentities()
+```
+###### Return Values
+> Returns an array containing all CAA Identities for the selected CA.
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the account information.
+
+---
+
+### ACMECert::getSAN
+
+Get all Subject Alternative Names of given certificate.
+```php
+public array ACMECert::getSAN( mixed $pem )
+```
+
+###### Parameters
+> **`pem`**
+>
+> can be one of the following:
+> * a string beginning with `file://` containing the filename to read a PEM encoded certificate or certificate-chain from.
+> * a string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
+
+
+###### Return Values
+> Returns an array containing all Subject Alternative Names of given certificate.
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the account information.
+
+---
+
+### ACMECert::getTermsURL
+
+Get URL to Terms Of Service for the selected CA.
+```php
+public array ACMECert::getTermsURL()
+```
+###### Return Values
+> Returns a string containing a URL to the Terms Of Service for the selected CA.
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the account information.
 
 ---
 

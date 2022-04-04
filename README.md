@@ -825,7 +825,7 @@ public array ACMECert::getCAAIdentities()
 ###### Return Values
 > Returns an array containing all CAA Identities for the selected CA.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the account information.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the CAA Identities.
 
 ---
 
@@ -847,7 +847,7 @@ public array ACMECert::getSAN( mixed $pem )
 ###### Return Values
 > Returns an array containing all Subject Alternative Names of given certificate.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the account information.
+> Throws an `Exception` if an error occured getting the Subject Alternative Names.
 
 ---
 
@@ -860,7 +860,7 @@ public array ACMECert::getTermsURL()
 ###### Return Values
 > Returns a string containing a URL to the Terms Of Service for the selected CA.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the account information.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the Terms Of Service.
 
 ---
 

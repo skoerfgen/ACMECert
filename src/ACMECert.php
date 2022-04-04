@@ -480,9 +480,9 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 	private function request_certificate($ret,$alternate=false){
 		$this->log('Requesting '.($alternate?'alternate':'default').' certificate-chain');
 		$ret=$this->request($ret['certificate'],'');
-		if ($ret['headers']['content-type']!=='application/pem-certificate-chain'){
-			throw new Exception('Unexpected content-type: '.$ret['headers']['content-type']);
-		}
+
+		$isser_cn=$this->getTopIssuerCN($ret['body']);
+
 		if (!$alternate) {
 			if (isset($ret['headers']['link']['alternate'])){
 				$this->alternate_chains=$ret['headers']['link']['alternate'];
@@ -490,7 +490,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				$this->alternate_chains=array();
 			}
 		}
-		$this->log('Certificate-chain retrieved');
+		$this->log('Certificate-chain retrieved: '.$isser_cn);
 		return $ret['body'];
 	}
 

@@ -332,11 +332,13 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		if (!empty($headers['content-type'])){
 			switch($headers['content-type']){
 				case 'application/json':
-					$body=$this->json_decode($body);
-					if (isset($body['error'])) {
-						$this->handleError($body['error']);
+					if ($code[0]=='2'){ // on non 2xx response: fall through to problem+json case
+						$body=$this->json_decode($body);
+						if (isset($body['error'])) {
+							$this->handleError($body['error']);
+						}
+						break;
 					}
-				break;
 				case 'application/problem+json':
 					$body=$this->json_decode($body);
 					$this->handleError($body);

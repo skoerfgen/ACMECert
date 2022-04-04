@@ -113,6 +113,12 @@ $ac=new ACMECert('https://dv.acme-v02.api.pki.goog/directory');
 $ac=new ACMECert('https://dv.acme-v02.test-api.pki.goog/directory');
 ```
 
+##### [SSL.com](https://www.ssl.com/)
+> Live CA
+```php
+$ac=new ACMECert('https://acme.ssl.com/sslcom-dv-rsa');
+```
+
 ##### [ZeroSSL](https://zerossl.com/)
 > Live CA
 ```php

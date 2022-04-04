@@ -33,7 +33,7 @@ use skoerfgen\ACMECert\ACME_Exception;
 use Exception;
 use stdClass;
 
-class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encrypt (ACME v2)
+class ACMECert extends ACMEv2 {
 	private $alternate_chains=array();
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){

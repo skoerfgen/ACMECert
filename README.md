@@ -49,7 +49,19 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded 
 
 ## Require ACMECert
 
-manual installation:
+manual download: https://github.com/skoerfgen/ACMECert/archive/master.zip
+
+usage:
+
+```php
+require 'ACMECert.php';
+
+use skoerfgen\ACMECert\ACMECert;
+```
+
+---
+
+or download it using [git](https://git-scm.com/):
 
 ```
 git clone https://github.com/skoerfgen/ACMECert
@@ -64,9 +76,9 @@ use skoerfgen\ACMECert\ACMECert;
 
 ---
 
-or install it using [composer](https://getcomposer.org):
+or download it using [composer](https://getcomposer.org):
 ```
-  composer require skoerfgen/acmecert
+composer require skoerfgen/acmecert
 ```
 
 usage:

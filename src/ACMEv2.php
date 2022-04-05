@@ -116,6 +116,11 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		error_log($txt);
 	}
 
+	protected function create_ACME_Exception($type,$detail,$subproblems=array()){
+		$this->log('ACME_Exception: '.$detail.' ('.$type.')');
+		return new ACME_Exception($type,$detail,$subproblems);
+	}
+
 	protected function get_openssl_error(){
 		$out=array();
 		$arr=error_get_last();
@@ -347,7 +352,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		if ($code[0]!='2') {
-			throw new Exception('Invalid HTTP-Status-Code received: '.$code.': '.$url);
+			throw new Exception('Invalid HTTP-Status-Code received: '.$code.': '.print_r($body,true));
 		}
 
 		$ret=array(
@@ -362,15 +367,16 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	private function handleError($error){
 		if ($error['type']==='compound' && isset($error['subproblems'][0])) {
 			$error['type']=$error['subproblems'][0]['type'];
-			$error['detail']=$error['subproblems'][0]['detail'];
+			$error['detail'].=': '.$error['subproblems'][0]['detail'];
 		}
-
-		throw new ACME_Exception($error['type'],$error['detail'],
+		throw $this->create_ACME_Exception($error['type'],$error['detail'],
 			array_map(function($subproblem){
-				return new ACME_Exception(
+				return $this->create_ACME_Exception(
 					$subproblem['type'],
 					(isset($subproblem['identifier']['value'])?
-						'"'.$subproblem['identifier']['value'].'": ':'').$subproblem['detail']
+						'"'.$subproblem['identifier']['value'].'": ':
+						''
+					).$subproblem['detail']
 				);
 			},isset($error['subproblems'])?$error['subproblems']:array())
 		);

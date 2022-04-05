@@ -258,7 +258,10 @@ class ACMECert extends ACMEv2 {
 							$this->log('Validation failed: '.$opts['domain']);
 
 							$error=$body['challenges'][0]['error'];
-							throw new ACME_Exception($error['type'],'Challenge validation failed: '.$error['detail']);
+							throw $this->create_ACME_Exception(
+								$error['type'],
+								'Challenge validation failed: '.$error['detail']
+							);
 						}else{
 							$this->log('Validation successful: '.$opts['domain']);
 						}

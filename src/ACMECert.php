@@ -154,7 +154,9 @@ class ACMECert extends ACMEv2 {
 		$this->log('Certificate revoked');
 	}
 
-	public function getCertificateChain($pem,$domain_config,$callback,$authz_reuse=true){
+	public function getCertificateChain($pem,$domain_config,$callback,$opts=array()){
+		$opts=$this->parseOpts($opts);
+
 		$domain_config=array_change_key_case($domain_config,CASE_LOWER);
 		$domains=array_keys($domain_config);
 		$authz_deactivated=false;
@@ -163,20 +165,13 @@ class ACMECert extends ACMEv2 {
 
 		// === Order ===
 		$this->log('Creating Order');
-		$ret=$this->request('newOrder',array(
-			'identifiers'=>array_map(
-				function($domain){
-					return array('type'=>'dns','value'=>$domain);
-				},
-				$domains
-			)
-		));
+		$ret=$this->request('newOrder',$this->makeOrder($domains,$opts));
 		$order=$ret['body'];
 		$order_location=$ret['headers']['location'];
 		$this->log('Order created: '.$order_location);
 
 		// === Authorization ===
-		if ($order['status']==='ready' && $authz_reuse) {
+		if ($order['status']==='ready' && $opts['authz_reuse']) {
 			$this->log('All authorizations already valid, skipping validation altogether');
 		}else{
 			$groups=array();
@@ -195,7 +190,7 @@ class ACMECert extends ACMEv2 {
 				).$authorization['identifier']['value'];
 
 				if ($authorization['status']==='valid') {
-					if ($authz_reuse) {
+					if ($opts['authz_reuse']) {
 						$this->log('Authorization of '.$domain.' already valid, skipping validation');
 					}else{
 						$this->log('Authorization of '.$domain.' already valid, deactivating authorization');
@@ -316,8 +311,8 @@ class ACMECert extends ACMEv2 {
 		throw new Exception('Order failed');
 	}
 
-	public function getCertificateChains($pem,$domain_config,$callback,$authz_reuse=true){
-		$default_chain=$this->getCertificateChain($pem,$domain_config,$callback,$authz_reuse);
+	public function getCertificateChains($pem,$domain_config,$callback,$opts=array()){
+		$default_chain=$this->getCertificateChain($pem,$domain_config,$callback,$opts);
 
 		$out=array();
 		$out[$this->getTopIssuerCN($default_chain)]=$default_chain;
@@ -327,7 +322,7 @@ class ACMECert extends ACMEv2 {
 			$out[$this->getTopIssuerCN($chain)]=$chain;
 		}
 
-		$this->log('Received '.count($out).' chains: '.implode(', ',array_keys($out)));
+		$this->log('Received '.count($out).' chain(s): '.implode(', ',array_keys($out)));
 		return $out;
 	}
 
@@ -436,6 +431,45 @@ class ACMECert extends ACMEv2 {
 			throw new Exception('Could not export self signed certificate ! ('.$this->get_openssl_error().')');
 		}
 		return $out;
+	}
+
+	private function parseOpts($opts){
+		// backwards compatibility to ACMECert v3.1.2 or older
+		if (!is_array($opts)) $opts=array('authz_reuse'=>(bool)$opts);
+		if (!isset($opts['authz_reuse'])) $opts['authz_reuse']=true;
+
+		$diff=array_diff_key(
+			$opts,
+			array_flip(array('authz_reuse','notAfter','notBefore'))
+		);
+
+		if (!empty($diff)){
+			throw new Exception('getCertificateChain(s): Invalid option "'.key($diff).'"');
+		}
+
+		return $opts;
+	}
+
+	private function setRFC3339Date(&$out,$key,$opts){
+		if (isset($opts[$key])){
+			$out[$key]=is_string($opts[$key])?
+				$opts[$key]:
+				date(DATE_RFC3339,$opts[$key]);
+		}
+	}
+
+	private function makeOrder($domains,$opts){
+		$order=array(
+			'identifiers'=>array_map(
+				function($domain){
+					return array('type'=>'dns','value'=>$domain);
+				},
+				$domains
+			)
+		);
+		$this->setRFC3339Date($order,'notAfter',$opts);
+		$this->setRFC3339Date($order,'notBefore',$opts);
+		return $order;
 	}
 
 	private function parse_challenges($authorization,$type,&$url){

@@ -586,7 +586,7 @@ Get certificate-chain (certificate + the intermediate certificate(s)).
 
 *This is what Apache >= 2.4.8 needs for [`SSLCertificateFile`](https://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile), and what Nginx needs for [`ssl_certificate`](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate).*
 ```php
-public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback, bool $authz_reuse = TRUE )
+public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback, array $settings = array() )
 ```
 ###### Parameters
 > **`pem`**
@@ -601,7 +601,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 
 > **`domain_config`**
 >
-> An Array defining the domains and the corresponding challenge types to get a certificate for (up to 100 domains per certificate).
+> An Array defining the domains and the corresponding challenge types to get a certificate for.
 >
 > The first one is used as `Common Name` for the certificate.
 >
@@ -634,8 +634,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 > >                          ^^^
 > > ```
 >
-> ###### Parameters
-> **`opts`**
+> The `$opts` array passed to the callback function contains the following keys:
 >
 >> **`$opts['domain']`**
 >>
@@ -656,11 +655,30 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> dns-01 | TXT Resource Record Name | TXT Resource Record Value
 >> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
 
-> **`authz_reuse`** (default: `TRUE`)
+
+> **`settings`** (optional)
 >
-> If `FALSE` the callback function is always called for each domain and does not get skipped due to possibly already valid authorizations (authz) that are reused. This is achieved by deactivating already valid authorizations before getting new ones.
+> This array can have the following keys:
+>> **`authz_reuse`** (boolean / default: `TRUE`)
+>>
+>> If `FALSE` the callback function is always called for each domain and does not get skipped due to possibly already valid authorizations (authz) that are reused. This is achieved by deactivating already valid authorizations before getting new ones.
+>>
+>> > Hint: Under normal circumstances this is only needed when testing the callback function, not in production!
 >
-> > Hint: Under normal circumstances this is only needed when testing the callback function, not in production!
+>> **`notBefore`** / **`notAfter`** (mixed)
+>>
+>> can be one of the following:
+>> * a string containing a RFC 3339 formated date
+>> * a timestamp (integer)
+>>
+>> Example: Certificate valid for 3 days:
+>> ```php
+>> array( 'notAfter' => time() + (60*60*24) * 3 )
+>> ```
+>> or
+>> ```php
+>> array( 'notAfter' => '1970-01-01T01:22:17+01:00' )
+>> ```
 
 ###### Return Values
 > Returns a PEM encoded certificate chain.
@@ -675,7 +693,7 @@ Get all (default and alternate) certificate-chains.
 This function takes the same arguments as the [getCertificateChain](#acmecertgetcertificatechain) function above, but it returns an array of certificate chains instead of a single chain.
 
 ```php
-public string ACMECert::getCertificateChains ( mixed $pem, array $domain_config, callable $callback, bool $authz_reuse = TRUE )
+public string ACMECert::getCertificateChains ( mixed $pem, array $domain_config, callable $callback, array $settings = array() )
 ```
 
 ###### Return Values

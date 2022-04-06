@@ -93,14 +93,14 @@ use skoerfgen\ACMECert\ACMECert;
 
 #### Choose Certificate Authority (CA)
 ##### [Let's Encrypt](https://letsencrypt.org/)
-> Live CA - https://acme-v02.api.letsencrypt.org/directory
+> Live CA
 ```php
-$ac=new ACMECert();
+$ac=new ACMECert('https://acme-v02.api.letsencrypt.org/directory');
 ```
 
-> Staging CA - https://acme-staging-v02.api.letsencrypt.org/directory
+> Staging CA
 ```php
-$ac=new ACMECert(false);
+$ac=new ACMECert('https://acme-staging-v02.api.letsencrypt.org/directory');
 ```
 
 ##### [Buypass](https://buypass.com/)
@@ -367,17 +367,12 @@ try {
 
 Creates a new ACMECert instance.
 ```php
-public ACMECert::__construct ( mixed $ca_url = TRUE )
+public ACMECert::__construct ( string $ca_url = 'https://acme-v02.api.letsencrypt.org/directory' )
 ```
 ###### Parameters
 > **`ca_url`**
 >
-> can be one of the following:
->
-> * a boolean:  
-> when `TRUE` the Let's Encrypt - Live CA (https://acme-v02.api.letsencrypt.org/directory) is used.  
-> when `FALSE` the Let's Encrypt - Staging CA (https://acme-staging-v02.api.letsencrypt.org/directory) is used.
-> * a string containing the URL to an ACME CA directory endpoint.
+> A string containing the URL to an ACME CA directory endpoint.
 
 ###### Return Values
 > Returns a new ACMECert instance.

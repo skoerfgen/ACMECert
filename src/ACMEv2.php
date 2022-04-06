@@ -339,7 +339,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				case 'application/json':
 					if ($code[0]=='2'){ // on non 2xx response: fall through to problem+json case
 						$body=$this->json_decode($body);
-						if (isset($body['error'])) {
+						if (isset($body['error']) && !(isset($body['status']) && $body['status']==='valid')) {
 							$this->handleError($body['error']);
 						}
 						break;

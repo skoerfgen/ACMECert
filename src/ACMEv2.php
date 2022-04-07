@@ -365,10 +365,6 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	}
 
 	private function handleError($error){
-		if ($error['type']==='compound' && isset($error['subproblems'][0])) {
-			$error['type']=$error['subproblems'][0]['type'];
-			$error['detail'].=': '.$error['subproblems'][0]['detail'];
-		}
 		throw $this->create_ACME_Exception($error['type'],$error['detail'],
 			array_map(function($subproblem){
 				return $this->create_ACME_Exception(

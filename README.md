@@ -14,6 +14,7 @@ It is self contained and contains a set of functions allowing you to:
 - manage account: [register](#acmecertregister)/[update](#acmecertupdate)/[deactivate](#acmecertdeactivateaccount) and [account key roll-over](#acmecertkeychange)
 - [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates (to renew a certificate just get a new one)
 - [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) a certificate is still valid
+- and more..
 > see [Function Reference](#function-reference) for a full list
 
 It abstacts away the complexity of the ACME protocol to get a certificate

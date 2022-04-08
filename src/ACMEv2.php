@@ -40,7 +40,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce;
 
 	public function __construct($live=true){
-		if (is_bool($live)) {
+		if (is_bool($live)){ // backwards compatibility to ACMECert v3.1.2 or older
 			$this->directory=$this->directories[$live?'live':'staging'];
 		}else{
 			$this->directory=$live;

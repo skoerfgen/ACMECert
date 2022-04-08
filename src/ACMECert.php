@@ -154,8 +154,8 @@ class ACMECert extends ACMEv2 {
 		$this->log('Certificate revoked');
 	}
 
-	public function getCertificateChain($pem,$domain_config,$callback,$opts=array()){
-		$opts=$this->parseOpts($opts);
+	public function getCertificateChain($pem,$domain_config,$callback,$settings=array()){
+		$settings=$this->parseSettings($settings);
 
 		$domain_config=array_change_key_case($domain_config,CASE_LOWER);
 		$domains=array_keys($domain_config);
@@ -165,13 +165,13 @@ class ACMECert extends ACMEv2 {
 
 		// === Order ===
 		$this->log('Creating Order');
-		$ret=$this->request('newOrder',$this->makeOrder($domains,$opts));
+		$ret=$this->request('newOrder',$this->makeOrder($domains,$settings));
 		$order=$ret['body'];
 		$order_location=$ret['headers']['location'];
 		$this->log('Order created: '.$order_location);
 
 		// === Authorization ===
-		if ($order['status']==='ready' && $opts['authz_reuse']) {
+		if ($order['status']==='ready' && $settings['authz_reuse']) {
 			$this->log('All authorizations already valid, skipping validation altogether');
 		}else{
 			$groups=array();
@@ -190,7 +190,7 @@ class ACMECert extends ACMEv2 {
 				).$authorization['identifier']['value'];
 
 				if ($authorization['status']==='valid') {
-					if ($opts['authz_reuse']) {
+					if ($settings['authz_reuse']) {
 						$this->log('Authorization of '.$domain.' already valid, skipping validation');
 					}else{
 						$this->log('Authorization of '.$domain.' already valid, deactivating authorization');
@@ -311,8 +311,8 @@ class ACMECert extends ACMEv2 {
 		throw new Exception('Order failed');
 	}
 
-	public function getCertificateChains($pem,$domain_config,$callback,$opts=array()){
-		$default_chain=$this->getCertificateChain($pem,$domain_config,$callback,$opts);
+	public function getCertificateChains($pem,$domain_config,$callback,$settings=array()){
+		$default_chain=$this->getCertificateChain($pem,$domain_config,$callback,$settings);
 
 		$out=array();
 		$out[$this->getTopIssuerCN($default_chain)]=$default_chain;
@@ -433,8 +433,8 @@ class ACMECert extends ACMEv2 {
 		return $out;
 	}
 
-	private function parseOpts($opts){
-		// backwards compatibility to ACMECert v3.1.2 or older
+	private function parseSettings($opts){
+		// authz_reuse: backwards compatibility to ACMECert v3.1.2 or older
 		if (!is_array($opts)) $opts=array('authz_reuse'=>(bool)$opts);
 		if (!isset($opts['authz_reuse'])) $opts['authz_reuse']=true;
 

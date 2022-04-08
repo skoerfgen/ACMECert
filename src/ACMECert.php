@@ -500,7 +500,7 @@ class ACMECert extends ACMEv2 {
 	}
 
 	private function poll($initial,$type,&$ret){
-		$max_tries=8;
+		$max_tries=10; // ~ 5 minutes
 		for($i=0;$i<$max_tries;$i++){
 			$ret=$this->request($type);
 			$ret=$ret['body'];

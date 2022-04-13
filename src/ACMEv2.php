@@ -318,12 +318,17 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				}else{
 					list($k,$v)=$parts;
 					$k=strtolower(trim($k));
-					if ($k==='link'){
-						if (preg_match('/<(.*)>\s*;\s*rel=\"(.*)\"/',$v,$matches)){
-							$carry[$k][$matches[2]][]=trim($matches[1]);
-						}
-					}else{
-						$carry[$k]=trim($v);
+					switch($k){
+						case 'link':
+							if (preg_match('/<(.*)>\s*;\s*rel=\"(.*)\"/',$v,$matches)){
+								$carry[$k][$matches[2]][]=trim($matches[1]);
+							}
+						break;
+						case 'content-type':
+							list($v)=explode(';',$v,2);
+						default:
+							$carry[$k]=trim($v);
+						break;
 					}
 				}
 				return $carry;
@@ -335,8 +340,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		if (!empty($headers['replay-nonce'])) $this->nonce=$headers['replay-nonce'];
 
 		if (!empty($headers['content-type'])){
-			list($headers['content-type'])=explode(';',$headers['content-type'],2);
-			switch(trim($headers['content-type'])){
+			switch($headers['content-type']){
 				case 'application/json':
 					if ($code[0]=='2'){ // on non 2xx response: fall through to problem+json case
 						$body=$this->json_decode($body);

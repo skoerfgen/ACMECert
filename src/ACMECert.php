@@ -517,6 +517,9 @@ class ACMECert extends ACMEv2 {
 	private function request_certificate($ret,$alternate=false){
 		$this->log('Requesting '.($alternate?'alternate':'default').' certificate-chain');
 		$ret=$this->request($ret['certificate'],'');
+		if ($ret['headers']['content-type']!=='application/pem-certificate-chain'){
+			throw new Exception('Unexpected content-type: '.$ret['headers']['content-type']);
+		}
 
 		$isser_cn=$this->getTopIssuerCN($ret['body']);
 

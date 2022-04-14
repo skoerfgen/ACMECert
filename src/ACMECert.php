@@ -322,7 +322,6 @@ class ACMECert extends ACMEv2 {
 			$out[$this->getTopIssuerCN($chain)]=$chain;
 		}
 
-		$this->log('Received '.count($out).' chain(s): '.implode(', ',array_keys($out)));
 		return $out;
 	}
 
@@ -521,7 +520,11 @@ class ACMECert extends ACMEv2 {
 			throw new Exception('Unexpected content-type: '.$ret['headers']['content-type']);
 		}
 
-		$isser_cn=$this->getTopIssuerCN($ret['body']);
+		$chain=array();
+		foreach($this->splitChain($ret['body']) as $cert){
+			$info=$this->parseCertificate($cert);
+			$chain[]='['.$info['issuer']['CN'].']';
+		}
 
 		if (!$alternate) {
 			if (isset($ret['headers']['link']['alternate'])){
@@ -530,7 +533,8 @@ class ACMECert extends ACMEv2 {
 				$this->alternate_chains=array();
 			}
 		}
-		$this->log('Certificate-chain retrieved: '.$isser_cn);
+
+		$this->log(($alternate?'Alternate':'Default').' certificate-chain retrieved: '.implode(' -> ',array_reverse($chain,true)));
 		return $ret['body'];
 	}
 

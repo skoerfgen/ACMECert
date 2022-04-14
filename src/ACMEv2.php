@@ -38,6 +38,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
 		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce;
+	private $retry_after=null;
 
 	public function __construct($live=true){
 		if (is_bool($live)){ // backwards compatibility to ACMECert v3.1.2 or older
@@ -179,6 +180,12 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}catch(ACME_Exception $e){ // retry previous request once, if replay-nonce expired/failed
 			if (!$retry && $e->getType()==='urn:ietf:params:acme:error:badNonce') {
 				$this->log('Replay-Nonce expired, retrying previous request');
+				return $this->request($type,$payload,true);
+			}
+			if (!$retry && $e->getType()==='urn:ietf:params:acme:error:rateLimited' && $this->retry_after!==null) {
+				if ($this->retry_after>300) throw $e; // only wait for max. 5 minutes
+				$this->log('Retrying in '.$this->retry_after.'s');
+				sleep($this->retry_after);
 				return $this->request($type,$payload,true);
 			}
 			throw $e; // rethrow all other exceptions
@@ -351,7 +358,15 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 					}
 				case 'application/problem+json':
 					$body=$this->json_decode($body);
+					if (isset($headers['retry-after'])){
+						if (is_numeric($headers['retry-after'])){
+							$this->retry_after=ceil($headers['retry-after']);
+						}else{
+							$this->retry_after=strtotime($headers['retry-after'])-time();
+						}
+					}
 					$this->handleError($body);
+					$this->retry_after=null;
 				break;
 			}
 		}

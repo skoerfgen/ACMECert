@@ -38,7 +38,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
 		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce;
-	private $retry_after=null;
+	private $delay_until=null;
 
 	public function __construct($live=true){
 		if (is_bool($live)){ // backwards compatibility to ACMECert v3.1.2 or older
@@ -173,6 +173,8 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			$type='_tmp';
 		}
 
+		$this->handleDelay();
+
 		try {
 			$ret=$this->http_request($this->resources[$type],json_encode(
 				$this->jws_encapsulate($type,$payload)
@@ -182,10 +184,8 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				$this->log('Replay-Nonce expired, retrying previous request');
 				return $this->request($type,$payload,true);
 			}
-			if (!$retry && $e->getType()==='urn:ietf:params:acme:error:rateLimited' && $this->retry_after!==null) {
-				if ($this->retry_after>300) throw $e; // only wait for max. 5 minutes
-				$this->log('Retrying in '.$this->retry_after.'s');
-				sleep($this->retry_after);
+			if (!$retry && $e->getType()==='urn:ietf:params:acme:error:rateLimited' && $this->delay_until!==null) {
+				$this->handleDelay();
 				return $this->request($type,$payload,true);
 			}
 			throw $e; // rethrow all other exceptions
@@ -197,6 +197,15 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		return $ret;
+	}
+
+	private function handleDelay(){
+		if ($this->delay_until===null) return;
+		$delta=$this->delay_until-time();
+		if ($delta<1) return;
+		$this->log('Rate Limit - Delaying '.$delta.'s');
+		sleep($delta);
+		$this->delay_until=null;
 	}
 
 	protected function jws_encapsulate($type,$payload,$is_inner_jws=false){ // RFC7515
@@ -346,6 +355,15 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 		if (!empty($headers['replay-nonce'])) $this->nonce=$headers['replay-nonce'];
 
+		if (isset($headers['retry-after'])){
+			if (is_numeric($headers['retry-after'])){
+				$this->delay_until=time()+ceil($headers['retry-after']);
+			}else{
+				$this->delay_until=strtotime($headers['retry-after']);
+			}
+			if ($this->delay_until-time()>300) $this->delay_until=null; // wait for max. 5 minutes
+		}
+
 		if (!empty($headers['content-type'])){
 			switch($headers['content-type']){
 				case 'application/json':
@@ -358,15 +376,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 					}
 				case 'application/problem+json':
 					$body=$this->json_decode($body);
-					if (isset($headers['retry-after'])){
-						if (is_numeric($headers['retry-after'])){
-							$this->retry_after=ceil($headers['retry-after']);
-						}else{
-							$this->retry_after=strtotime($headers['retry-after'])-time();
-						}
-					}
 					$this->handleError($body);
-					$this->retry_after=null;
 				break;
 			}
 		}

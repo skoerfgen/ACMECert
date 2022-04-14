@@ -495,7 +495,15 @@ class ACMECert extends ACMEv2 {
 				break;
 			}
 		}
-		throw new Exception('Challenge type: "'.$type.'" not available');
+		throw new Exception(
+			'Challenge type: "'.$type.'" not available, for this challenge use '.
+			implode(' or ',array_map(
+				function($a){
+					return '"'.$a['type'].'"';
+				},
+				$authorization['challenges']
+			))
+		);
 	}
 
 	private function poll($initial,$type,&$ret){

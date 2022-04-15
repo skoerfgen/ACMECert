@@ -322,6 +322,7 @@ class ACMECert extends ACMEv2 {
 			$out[$this->getTopIssuerCN($chain)]=$chain;
 		}
 
+		$this->log('Received '.count($out).' chains: '.implode(', ',array_keys($out)));
 		return $out;
 	}
 

@@ -173,8 +173,6 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			$type='_tmp';
 		}
 
-		$this->handleDelay();
-
 		try {
 			$ret=$this->http_request($this->resources[$type],json_encode(
 				$this->jws_encapsulate($type,$payload)
@@ -185,7 +183,6 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				return $this->request($type,$payload,true);
 			}
 			if (!$retry && $e->getType()==='urn:ietf:params:acme:error:rateLimited' && $this->delay_until!==null) {
-				$this->handleDelay();
 				return $this->request($type,$payload,true);
 			}
 			throw $e; // rethrow all other exceptions
@@ -197,15 +194,6 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		return $ret;
-	}
-
-	private function handleDelay(){
-		if ($this->delay_until===null) return;
-		$delta=$this->delay_until-time();
-		if ($delta<1) return;
-		$this->log('Rate Limit - Delaying '.$delta.'s');
-		sleep($delta);
-		$this->delay_until=null;
 	}
 
 	protected function jws_encapsulate($type,$payload,$is_inner_jws=false){ // RFC7515
@@ -282,6 +270,16 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				throw new Exception('Can not connect, no cURL or fopen wrappers enabled !');
 			}
 		}
+
+		if ($this->delay_until!==null){
+			$delta=$this->delay_until-time();
+			if ($delta>0){
+				$this->log('Delaying '.$delta.'s (rate limit)');
+				sleep($delta);
+			}
+			$this->delay_until=null;
+		}
+
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
 		$user_agent='ACMECert v3.2.0 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
@@ -361,7 +359,9 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}else{
 				$this->delay_until=strtotime($headers['retry-after']);
 			}
-			if ($this->delay_until-time()>300) $this->delay_until=null; // wait for max. 5 minutes
+			$tmp=$this->delay_until-time();
+			// ignore delay if not in range 1s..5min
+			if ($tmp>300 || $tmp<1) $this->delay_until=null;
 		}
 
 		if (!empty($headers['content-type'])){

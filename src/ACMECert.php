@@ -211,7 +211,8 @@ class ACMECert extends ACMEv2 {
 
 			if ($authz_deactivated){
 				$this->log('Restarting Order after deactivating already valid authorizations');
-				return $this->getCertificateChain($pem,$domain_config,$callback);
+				$settings['authz_reuse']=true;
+				return $this->getCertificateChain($pem,$domain_config,$callback,$settings);
 			}
 
 			// make sure dns-01 comes last to avoid DNS problems for other challenges

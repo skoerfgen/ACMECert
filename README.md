@@ -171,43 +171,6 @@ $ret=$ac->registerEAB(true,'INSERT_EAB_KEY_ID_HERE','INSERT_EAB_HMAC_HERE','info
 print_r($ret);
 ```
 
-#### Get Account Information
-```php
-$ac->loadAccountKey('file://'.'account_key.pem');
-$ret=$ac->getAccount();
-print_r($ret);
-```
-
-#### Account Key Roll-over
-```php
-$ac->loadAccountKey('file://'.'account_key.pem');
-$ret=$ac->keyChange('file://'.'new_account_key.pem');
-print_r($ret);
-```
-
-#### Deactivate Account
-```php
-$ac->loadAccountKey('file://'.'account_key.pem');
-$ret=$ac->deactivateAccount();
-print_r($ret);
-```
-
-#### Revoke Certificate
-```php
-$ac->loadAccountKey('file://'.'account_key.pem');
-$ac->revoke('file://'.'fullchain.pem');
-```
-
-#### Get Remaining Days
-```php
-$days=$ac->getRemainingDays('file://'.'fullchain.pem'); // certificate or certificate-chain
-if ($days>30) { // renew 30 days before expiry
-  die('Certificate still good, exiting..');
-}
-// get new certificate here..
-```
-> This allows you to run your renewal script without the need to time it exactly, just run it often enough. (cronjob)
-
 #### Get Certificate using `http-01` challenge
 ```php
 $ac->loadAccountKey('file://'.'account_key.pem');
@@ -227,17 +190,6 @@ $handler=function($opts){
 };
 
 $fullchain=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
-file_put_contents('fullchain.pem',$fullchain);
-```
-
-#### Get alternate chains
-```php
-$chains=$ac->getCertificateChains('file://'.'cert_private_key.pem',$domain_config,$handler);
-if (isset($chains['ISRG Root X1'])){ // use alternate chain 'ISRG Root X1'
-  $fullchain=$chains['ISRG Root X1'];
-}else{ // use default chain if 'ISRG Root X1' is not present
-  $fullchain=reset($chains);
-}
 file_put_contents('fullchain.pem',$fullchain);
 ```
 
@@ -314,8 +266,55 @@ $handler=function($opts) use ($ac){
 
 $fullchain=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
 file_put_contents('fullchain.pem',$fullchain);
-
 ```
+
+#### Get alternate chains
+```php
+$chains=$ac->getCertificateChains('file://'.'cert_private_key.pem',$domain_config,$handler);
+if (isset($chains['ISRG Root X1'])){ // use alternate chain 'ISRG Root X1'
+  $fullchain=$chains['ISRG Root X1'];
+}else{ // use default chain if 'ISRG Root X1' is not present
+  $fullchain=reset($chains);
+}
+file_put_contents('fullchain.pem',$fullchain);
+```
+
+#### Revoke Certificate
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ac->revoke('file://'.'fullchain.pem');
+```
+
+#### Get Account Information
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ret=$ac->getAccount();
+print_r($ret);
+```
+
+#### Account Key Roll-over
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ret=$ac->keyChange('file://'.'new_account_key.pem');
+print_r($ret);
+```
+
+#### Deactivate Account
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ret=$ac->deactivateAccount();
+print_r($ret);
+```
+
+#### Get Remaining Days
+```php
+$days=$ac->getRemainingDays('file://'.'fullchain.pem'); // certificate or certificate-chain
+if ($days>30) { // renew 30 days before expiry
+  die('Certificate still good, exiting..');
+}
+// get new certificate here..
+```
+> This allows you to run your renewal script without the need to time it exactly, just run it often enough. (cronjob)
 
 ## Logging
 

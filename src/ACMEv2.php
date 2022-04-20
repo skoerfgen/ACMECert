@@ -37,7 +37,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce;
+		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce=null;
 	private $delay_until=null;
 
 	public function __construct($live=true){
@@ -209,6 +209,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				$ret=$this->http_request($this->resources['newNonce'],false);
 			}
 			$protected['nonce']=$this->nonce;
+			$this->nonce=null;
 		}
 
 		$protected['url']=$this->resources[$type];

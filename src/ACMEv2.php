@@ -212,6 +212,10 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			$this->nonce=null;
 		}
 
+		if (!isset($this->resources[$type])){
+			throw new Exception('Resource "'.$type.'" not available.');
+		}
+
 		$protected['url']=$this->resources[$type];
 
 		$protected64=$this->base64url(json_encode($protected,JSON_UNESCAPED_SLASHES));

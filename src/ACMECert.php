@@ -33,16 +33,44 @@ use skoerfgen\ACMECert\ACME_Exception;
 use Exception;
 use stdClass;
 
-class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encrypt (ACME v2)
+class ACMECert extends ACMEv2 {
 	private $alternate_chains=array();
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){
+		return $this->_register($termsOfServiceAgreed,$contacts);
+	}
+
+	public function registerEAB($termsOfServiceAgreed=false,$eab_kid,$eab_hmac,$contacts=array()){
+		if (!$this->resources) $this->readDirectory();
+
+		$protected=array(
+			'alg'=>'HS256',
+			'kid'=>$eab_kid,
+			'url'=>$this->resources['newAccount']
+		);
+		$payload=$this->jwk_header['jwk'];
+
+		$protected64=$this->base64url(json_encode($protected,JSON_UNESCAPED_SLASHES));
+		$payload64=$this->base64url(json_encode($payload,JSON_UNESCAPED_SLASHES));
+
+		$signature=hash_hmac('sha256',$protected64.'.'.$payload64,$this->base64url_decode($eab_hmac),true);
+
+		return $this->_register($termsOfServiceAgreed,$contacts,array(
+			'externalAccountBinding'=>array(
+				'protected'=>$protected64,
+				'payload'=>$payload64,
+				'signature'=>$this->base64url($signature)
+			)
+		));
+	}
+
+	private function _register($termsOfServiceAgreed=false,$contacts=array(),$extra=array()){
 		$this->log('Registering account');
 
 		$ret=$this->request('newAccount',array(
 			'termsOfServiceAgreed'=>(bool)$termsOfServiceAgreed,
 			'contact'=>$this->make_contacts_array($contacts)
-		));
+		)+$extra);
 		$this->log($ret['code']==201?'Account registered':'Account already registered');
 		return $ret['body'];
 	}
@@ -73,6 +101,22 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$ret=$this->request($url,array('status'=>'deactivated'));
 		$this->log('Resource deactivated');
 		return $ret['body'];
+	}
+
+	public function getTermsURL(){
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['meta']['termsOfService'])){
+			throw new Exception('Failed to get Terms Of Service URL');
+		}
+		return $this->resources['meta']['termsOfService'];
+	}
+
+	public function getCAAIdentities(){
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['meta']['caaIdentities'])){
+			throw new Exception('Failed to get CAA Identities');
+		}
+		return $this->resources['meta']['caaIdentities'];
 	}
 
 	public function keyChange($new_account_key_pem){ // account key roll-over
@@ -110,7 +154,9 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		$this->log('Certificate revoked');
 	}
 
-	public function getCertificateChain($pem,$domain_config,$callback,$authz_reuse=true){
+	public function getCertificateChain($pem,$domain_config,$callback,$settings=array()){
+		$settings=$this->parseSettings($settings);
+
 		$domain_config=array_change_key_case($domain_config,CASE_LOWER);
 		$domains=array_keys($domain_config);
 		$authz_deactivated=false;
@@ -119,20 +165,13 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 		// === Order ===
 		$this->log('Creating Order');
-		$ret=$this->request('newOrder',array(
-			'identifiers'=>array_map(
-				function($domain){
-					return array('type'=>'dns','value'=>$domain);
-				},
-				$domains
-			)
-		));
+		$ret=$this->request('newOrder',$this->makeOrder($domains,$settings));
 		$order=$ret['body'];
 		$order_location=$ret['headers']['location'];
 		$this->log('Order created: '.$order_location);
 
 		// === Authorization ===
-		if ($order['status']==='ready' && $authz_reuse) {
+		if ($order['status']==='ready' && $settings['authz_reuse']) {
 			$this->log('All authorizations already valid, skipping validation altogether');
 		}else{
 			$groups=array();
@@ -151,7 +190,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				).$authorization['identifier']['value'];
 
 				if ($authorization['status']==='valid') {
-					if ($authz_reuse) {
+					if ($settings['authz_reuse']) {
 						$this->log('Authorization of '.$domain.' already valid, skipping validation');
 					}else{
 						$this->log('Authorization of '.$domain.' already valid, deactivating authorization');
@@ -172,7 +211,8 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 			if ($authz_deactivated){
 				$this->log('Restarting Order after deactivating already valid authorizations');
-				return $this->getCertificateChain($pem,$domain_config,$callback);
+				$settings['authz_reuse']=true;
+				return $this->getCertificateChain($pem,$domain_config,$callback,$settings);
 			}
 
 			// make sure dns-01 comes last to avoid DNS problems for other challenges
@@ -214,7 +254,10 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 							$this->log('Validation failed: '.$opts['domain']);
 
 							$error=$body['challenges'][0]['error'];
-							throw new ACME_Exception($error['type'],'Challenge validation failed: '.$error['detail']);
+							throw $this->create_ACME_Exception(
+								$error['type'],
+								'Challenge validation failed: '.$error['detail']
+							);
 						}else{
 							$this->log('Validation successful: '.$opts['domain']);
 						}
@@ -269,8 +312,8 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		throw new Exception('Order failed');
 	}
 
-	public function getCertificateChains($pem,$domain_config,$callback,$authz_reuse=true){
-		$default_chain=$this->getCertificateChain($pem,$domain_config,$callback,$authz_reuse);
+	public function getCertificateChains($pem,$domain_config,$callback,$settings=array()){
+		$default_chain=$this->getCertificateChain($pem,$domain_config,$callback,$settings);
 
 		$out=array();
 		$out[$this->getTopIssuerCN($default_chain)]=$default_chain;
@@ -280,7 +323,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			$out[$this->getTopIssuerCN($chain)]=$chain;
 		}
 
-		$this->log('Received '.count($out).' chains: '.implode(', ',array_keys($out)));
+		$this->log('Received '.count($out).' chain(s): '.implode(', ',array_keys($out)));
 		return $out;
 	}
 
@@ -325,7 +368,7 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 
 	public function generateRSAKey($bits=2048){
 		return $this->generateKey(array(
-			'private_key_bits'=>$bits,
+			'private_key_bits'=>(int)$bits,
 			'private_key_type'=>OPENSSL_KEYTYPE_RSA
 		));
 	}
@@ -348,6 +391,21 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 			throw new Exception('Could not parse certificate ('.$this->get_openssl_error().')');
 		}
 		return $ret;
+	}
+
+	public function getSAN($pem){
+		$ret=$this->parseCertificate($pem);
+		if (!isset($ret['extensions']['subjectAltName'])){
+			throw new Exception('No Subject Alternative Name (SAN) found in certificate');
+		}
+		$out=array();
+		foreach(explode(',',$ret['extensions']['subjectAltName']) as $line){
+			list($type,$name)=array_map('trim',explode(':',$line));
+			if ($type==='DNS'){
+				$out[]=$name;
+			}
+		}
+		return $out;
 	}
 
 	public function getRemainingDays($cert_pem){
@@ -376,6 +434,45 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		return $out;
 	}
 
+	private function parseSettings($opts){
+		// authz_reuse: backwards compatibility to ACMECert v3.1.2 or older
+		if (!is_array($opts)) $opts=array('authz_reuse'=>(bool)$opts);
+		if (!isset($opts['authz_reuse'])) $opts['authz_reuse']=true;
+
+		$diff=array_diff_key(
+			$opts,
+			array_flip(array('authz_reuse','notAfter','notBefore'))
+		);
+
+		if (!empty($diff)){
+			throw new Exception('getCertificateChain(s): Invalid option "'.key($diff).'"');
+		}
+
+		return $opts;
+	}
+
+	private function setRFC3339Date(&$out,$key,$opts){
+		if (isset($opts[$key])){
+			$out[$key]=is_string($opts[$key])?
+				$opts[$key]:
+				date(DATE_RFC3339,$opts[$key]);
+		}
+	}
+
+	private function makeOrder($domains,$opts){
+		$order=array(
+			'identifiers'=>array_map(
+				function($domain){
+					return array('type'=>'dns','value'=>$domain);
+				},
+				$domains
+			)
+		);
+		$this->setRFC3339Date($order,'notAfter',$opts);
+		$this->setRFC3339Date($order,'notBefore',$opts);
+		return $order;
+	}
+
 	private function parse_challenges($authorization,$type,&$url){
 		foreach($authorization['challenges'] as $challenge){
 			if ($challenge['type']!=$type) continue;
@@ -400,11 +497,19 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				break;
 			}
 		}
-		throw new Exception('Challenge type: "'.$type.'" not available');
+		throw new Exception(
+			'Challenge type: "'.$type.'" not available, for this challenge use '.
+			implode(' or ',array_map(
+				function($a){
+					return '"'.$a['type'].'"';
+				},
+				$authorization['challenges']
+			))
+		);
 	}
 
 	private function poll($initial,$type,&$ret){
-		$max_tries=8;
+		$max_tries=10; // ~ 5 minutes
 		for($i=0;$i<$max_tries;$i++){
 			$ret=$this->request($type);
 			$ret=$ret['body'];
@@ -424,6 +529,13 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 		if ($ret['headers']['content-type']!=='application/pem-certificate-chain'){
 			throw new Exception('Unexpected content-type: '.$ret['headers']['content-type']);
 		}
+
+		$chain=array();
+		foreach($this->splitChain($ret['body']) as $cert){
+			$info=$this->parseCertificate($cert);
+			$chain[]='['.$info['issuer']['CN'].']';
+		}
+
 		if (!$alternate) {
 			if (isset($ret['headers']['link']['alternate'])){
 				$this->alternate_chains=$ret['headers']['link']['alternate'];
@@ -431,7 +543,8 @@ class ACMECert extends ACMEv2 { // ACMECert - PHP client library for Let's Encry
 				$this->alternate_chains=array();
 			}
 		}
-		$this->log('Certificate-chain retrieved');
+
+		$this->log(($alternate?'Alternate':'Default').' certificate-chain retrieved: '.implode(' -> ',array_reverse($chain,true)));
 		return $ret['body'];
 	}
 

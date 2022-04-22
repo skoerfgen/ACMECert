@@ -37,10 +37,15 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce,$mode;
+		),$ch=null,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce=null;
+	private $delay_until=null;
 
 	public function __construct($live=true){
-		$this->directory=$this->directories[$this->mode=($live?'live':'staging')];
+		if (is_bool($live)){ // backwards compatibility to ACMECert v3.1.2 or older
+			$this->directory=$this->directories[$live?'live':'staging'];
+		}else{
+			$this->directory=$live;
+		}
 	}
 
 	public function __destruct(){
@@ -112,6 +117,11 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		error_log($txt);
 	}
 
+	protected function create_ACME_Exception($type,$detail,$subproblems=array()){
+		$this->log('ACME_Exception: '.$detail.' ('.$type.')');
+		return new ACME_Exception($type,$detail,$subproblems);
+	}
+
 	protected function get_openssl_error(){
 		$out=array();
 		$arr=error_get_last();
@@ -133,20 +143,30 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return $token.'.'.$this->thumbprint;
 	}
 
+	protected function readDirectory(){
+		$this->log('Initializing ACME v2 environment: '.$this->directory);
+		$ret=$this->http_request($this->directory); // Read ACME Directory
+		if (
+			!is_array($ret['body']) ||
+			!empty(
+				array_diff_key(
+					array_flip(array('newNonce','newAccount','newOrder')),
+					$ret['body']
+				)
+			)
+		){
+			throw new Exception('Failed to read directory: '.$this->directory);
+		}
+		$this->resources=$ret['body']; // store resources for later use
+		$this->log('Initialized');
+	}
+
 	protected function request($type,$payload='',$retry=false){
 		if (!$this->jwk_header) {
 			throw new Exception('use loadAccountKey to load an account key');
 		}
 
-		if (!$this->resources){
-			$this->log('Initializing ACME v2 '.$this->mode.' environment');
-			$ret=$this->http_request($this->directory); // Read ACME Directory
-			if (!is_array($ret['body'])) {
-				throw new Exception('Failed to read directory: '.$this->directory);
-			}
-			$this->resources=$ret['body']; // store resources for later use
-			$this->log('Initialized');
-		}
+		if (!$this->resources) $this->readDirectory();
 
 		if (0===stripos($type,'http')) {
 			$this->resources['_tmp']=$type;
@@ -160,6 +180,9 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}catch(ACME_Exception $e){ // retry previous request once, if replay-nonce expired/failed
 			if (!$retry && $e->getType()==='urn:ietf:params:acme:error:badNonce') {
 				$this->log('Replay-Nonce expired, retrying previous request');
+				return $this->request($type,$payload,true);
+			}
+			if (!$retry && $e->getType()==='urn:ietf:params:acme:error:rateLimited' && $this->delay_until!==null) {
 				return $this->request($type,$payload,true);
 			}
 			throw $e; // rethrow all other exceptions
@@ -186,12 +209,17 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				$ret=$this->http_request($this->resources['newNonce'],false);
 			}
 			$protected['nonce']=$this->nonce;
+			$this->nonce=null;
+		}
+
+		if (!isset($this->resources[$type])){
+			throw new Exception('Resource "'.$type.'" not available.');
 		}
 
 		$protected['url']=$this->resources[$type];
 
-		$protected64=$this->base64url(json_encode($protected));
-		$payload64=$this->base64url(is_string($payload)?$payload:json_encode($payload));
+		$protected64=$this->base64url(json_encode($protected,JSON_UNESCAPED_SLASHES));
+		$payload64=$this->base64url(is_string($payload)?$payload:json_encode($payload,JSON_UNESCAPED_SLASHES));
 
 		if (false===openssl_sign(
 			$protected64.'.'.$payload64,
@@ -224,6 +252,10 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return rtrim(strtr(base64_encode($data),'+/','-_'),'=');
 	}
 
+	protected function base64url_decode($data){
+		return base64_decode(strtr($data,'-_','+/'));
+	}
+
 	private function json_decode($str){
 		$ret=json_decode($str,true);
 		if ($ret===null) {
@@ -243,8 +275,18 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				throw new Exception('Can not connect, no cURL or fopen wrappers enabled !');
 			}
 		}
+
+		if ($this->delay_until!==null){
+			$delta=$this->delay_until-time();
+			if ($delta>0){
+				$this->log('Delaying '.$delta.'s (rate limit)');
+				sleep($delta);
+			}
+			$this->delay_until=null;
+		}
+
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v3.1.2 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v3.2.0 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();
@@ -295,12 +337,17 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				}else{
 					list($k,$v)=$parts;
 					$k=strtolower(trim($k));
-					if ($k==='link'){
-						if (preg_match('/<(.*)>\s*;\s*rel=\"(.*)\"/',$v,$matches)){
-							$carry[$k][$matches[2]][]=trim($matches[1]);
-						}
-					}else{
-						$carry[$k]=trim($v);
+					switch($k){
+						case 'link':
+							if (preg_match('/<(.*)>\s*;\s*rel=\"(.*)\"/',$v,$matches)){
+								$carry[$k][$matches[2]][]=trim($matches[1]);
+							}
+						break;
+						case 'content-type':
+							list($v)=explode(';',$v,2);
+						default:
+							$carry[$k]=trim($v);
+						break;
 					}
 				}
 				return $carry;
@@ -311,27 +358,36 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 		if (!empty($headers['replay-nonce'])) $this->nonce=$headers['replay-nonce'];
 
+		if (isset($headers['retry-after'])){
+			if (is_numeric($headers['retry-after'])){
+				$this->delay_until=time()+ceil($headers['retry-after']);
+			}else{
+				$this->delay_until=strtotime($headers['retry-after']);
+			}
+			$tmp=$this->delay_until-time();
+			// ignore delay if not in range 1s..5min
+			if ($tmp>300 || $tmp<1) $this->delay_until=null;
+		}
+
 		if (!empty($headers['content-type'])){
 			switch($headers['content-type']){
 				case 'application/json':
-					$body=$this->json_decode($body);
-				break;
+					if ($code[0]=='2'){ // on non 2xx response: fall through to problem+json case
+						$body=$this->json_decode($body);
+						if (isset($body['error']) && !(isset($body['status']) && $body['status']==='valid')) {
+							$this->handleError($body['error']);
+						}
+						break;
+					}
 				case 'application/problem+json':
 					$body=$this->json_decode($body);
-					throw new ACME_Exception($body['type'],$body['detail'],
-						array_map(function($subproblem){
-							return new ACME_Exception(
-								$subproblem['type'],
-								'"'.$subproblem['identifier']['value'].'": '.$subproblem['detail']
-							);
-						},isset($body['subproblems'])?$body['subproblems']:array())
-					);
+					$this->handleError($body);
 				break;
 			}
 		}
 
 		if ($code[0]!='2') {
-			throw new Exception('Invalid HTTP-Status-Code received: '.$code.': '.$url);
+			throw new Exception('Invalid HTTP-Status-Code received: '.$code.': '.print_r($body,true));
 		}
 
 		$ret=array(
@@ -342,4 +398,19 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 		return $ret;
 	}
+
+	private function handleError($error){
+		throw $this->create_ACME_Exception($error['type'],$error['detail'],
+			array_map(function($subproblem){
+				return $this->create_ACME_Exception(
+					$subproblem['type'],
+					(isset($subproblem['identifier']['value'])?
+						'"'.$subproblem['identifier']['value'].'": ':
+						''
+					).$subproblem['detail']
+				);
+			},isset($error['subproblems'])?$error['subproblems']:array())
+		);
+	}
+
 }

@@ -1,7 +1,7 @@
 # ACMECert
 
-PHP client library for [Let's Encrypt](https://letsencrypt.org/) ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555))  
-Version: 3.1.2
+PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
+Version: 3.2.0
 
 ## Description
 
@@ -11,9 +11,10 @@ with a few lines of PHP.
 It is self contained and contains a set of functions allowing you to:
 
 - generate [RSA](#acmecertgeneratersakey) / [EC (Elliptic Curve)](#acmecertgenerateeckey) keys
-- manage account: [register](#acmecertregister)/[update](#acmecertupdate)/[deactivate](#acmecertdeactivateaccount) and [account key roll-over](#acmecertkeychange)
+- manage account: [register](#acmecertregister)/[External Account Binding (EAB)](#acmecertregistereab)/[update](#acmecertupdate)/[deactivate](#acmecertdeactivateaccount) and [account key roll-over](#acmecertkeychange)
 - [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates (to renew a certificate just get a new one)
 - [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) a certificate is still valid
+- and more..
 > see [Function Reference](#function-reference) for a full list
 
 It abstacts away the complexity of the ACME protocol to get a certificate
@@ -49,7 +50,19 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded 
 
 ## Require ACMECert
 
-manual installation:
+manual download: https://github.com/skoerfgen/ACMECert/archive/master.zip
+
+usage:
+
+```php
+require 'ACMECert.php';
+
+use skoerfgen\ACMECert\ACMECert;
+```
+
+---
+
+or download it using [git](https://git-scm.com/):
 
 ```
 git clone https://github.com/skoerfgen/ACMECert
@@ -64,9 +77,9 @@ use skoerfgen\ACMECert\ACMECert;
 
 ---
 
-or install it using [composer](https://getcomposer.org):
+or download it using [composer](https://getcomposer.org):
 ```
-  composer require skoerfgen/acmecert
+composer require skoerfgen/acmecert
 ```
 
 usage:
@@ -77,16 +90,57 @@ require 'vendor/autoload.php';
 use skoerfgen\ACMECert\ACMECert;
 ```
 
-## Usage Examples
+## Usage / Examples
 
-#### Choose Live or Staging Environment
-> Live
+#### Choose Certificate Authority (CA)
+##### [Let's Encrypt](https://letsencrypt.org/)
+> Live CA
 ```php
-$ac=new ACMECert();
+$ac=new ACMECert('https://acme-v02.api.letsencrypt.org/directory');
 ```
-> Staging
+
+> Staging CA
 ```php
-$ac=new ACMECert(false);
+$ac=new ACMECert('https://acme-staging-v02.api.letsencrypt.org/directory');
+```
+
+##### [Buypass](https://buypass.com/)
+> Live CA
+```php
+$ac=new ACMECert('https://api.buypass.com/acme/directory');
+```
+
+> Staging CA
+```php
+$ac=new ACMECert('https://api.test4.buypass.no/acme/directory');
+```
+
+##### [Google Trust Services](https://pki.goog/)
+> Live CA
+```php
+$ac=new ACMECert('https://dv.acme-v02.api.pki.goog/directory');
+```
+
+> Staging CA
+```php
+$ac=new ACMECert('https://dv.acme-v02.test-api.pki.goog/directory');
+```
+
+##### [SSL.com](https://www.ssl.com/)
+> Live CA
+```php
+$ac=new ACMECert('https://acme.ssl.com/sslcom-dv-rsa');
+```
+
+##### [ZeroSSL](https://zerossl.com/)
+> Live CA
+```php
+$ac=new ACMECert('https://acme.zerossl.com/v2/DV90');
+```
+
+##### or any other ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555)) compatible CA
+```php
+$ac=new ACMECert('INSERT_URL_TO_AMCE_CA_DIRECTORY_HERE');
 ```
 
 #### Generate RSA Private Key
@@ -103,51 +157,19 @@ file_put_contents('account_key.pem',$key);
 ```
 > Equivalent to: `openssl ecparam -name secp384r1 -genkey -noout -out account_key.pem`
 
-#### Register Account Key with Let's Encrypt
+#### Register Account Key with CA
 ```php
 $ac->loadAccountKey('file://'.'account_key.pem');
 $ret=$ac->register(true,'info@example.com');
 print_r($ret);
 ```
 
-> **WARNING: By passing **TRUE** as first parameter of the register function you agree to the terms of service of Let's Encrypt. See [Let’s Encrypt Subscriber Agreement](https://letsencrypt.org/repository/) for more information.**
-
-#### Get Account Information
+#### Register Account Key with CA using External Account Binding
 ```php
 $ac->loadAccountKey('file://'.'account_key.pem');
-$ret=$ac->getAccount();
+$ret=$ac->registerEAB(true,'INSERT_EAB_KEY_ID_HERE','INSERT_EAB_HMAC_HERE','info@example.com');
 print_r($ret);
 ```
-
-#### Account Key Roll-over
-```php
-$ac->loadAccountKey('file://'.'account_key.pem');
-$ret=$ac->keyChange('file://'.'new_account_key.pem');
-print_r($ret);
-```
-
-#### Deactivate Account
-```php
-$ac->loadAccountKey('file://'.'account_key.pem');
-$ret=$ac->deactivateAccount();
-print_r($ret);
-```
-
-#### Revoke Certificate
-```php
-$ac->loadAccountKey('file://'.'account_key.pem');
-$ac->revoke('file://'.'fullchain.pem');
-```
-
-#### Get Remaining Days
-```php
-$days=$ac->getRemainingDays('file://'.'fullchain.pem'); // certificate or certificate-chain
-if ($days>30) { // renew 30 days before expiry
-  die('Certificate still good, exiting..');
-}
-// get new certificate here..
-```
-> This allows you to run your renewal script without the need to time it exactly, just run it often enough. (cronjob)
 
 #### Get Certificate using `http-01` challenge
 ```php
@@ -168,17 +190,6 @@ $handler=function($opts){
 };
 
 $fullchain=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
-file_put_contents('fullchain.pem',$fullchain);
-```
-
-#### Get alternate chains
-```php
-$chains=$ac->getCertificateChains('file://'.'cert_private_key.pem',$domain_config,$handler);
-if (isset($chains['ISRG Root X1'])){ // use alternate chain 'ISRG Root X1'
-  $fullchain=$chains['ISRG Root X1'];
-}else{ // use default chain if 'ISRG Root X1' is not present
-  $fullchain=reset($chains);
-}
 file_put_contents('fullchain.pem',$fullchain);
 ```
 
@@ -255,8 +266,55 @@ $handler=function($opts) use ($ac){
 
 $fullchain=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
 file_put_contents('fullchain.pem',$fullchain);
-
 ```
+
+#### Get alternate chains
+```php
+$chains=$ac->getCertificateChains('file://'.'cert_private_key.pem',$domain_config,$handler);
+if (isset($chains['ISRG Root X1'])){ // use alternate chain 'ISRG Root X1'
+  $fullchain=$chains['ISRG Root X1'];
+}else{ // use default chain if 'ISRG Root X1' is not present
+  $fullchain=reset($chains);
+}
+file_put_contents('fullchain.pem',$fullchain);
+```
+
+#### Revoke Certificate
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ac->revoke('file://'.'fullchain.pem');
+```
+
+#### Get Account Information
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ret=$ac->getAccount();
+print_r($ret);
+```
+
+#### Account Key Roll-over
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ret=$ac->keyChange('file://'.'new_account_key.pem');
+print_r($ret);
+```
+
+#### Deactivate Account
+```php
+$ac->loadAccountKey('file://'.'account_key.pem');
+$ret=$ac->deactivateAccount();
+print_r($ret);
+```
+
+#### Get Remaining Days
+```php
+$days=$ac->getRemainingDays('file://'.'fullchain.pem'); // certificate or certificate-chain
+if ($days>30) { // renew 30 days before expiry
+  die('Certificate still good, exiting..');
+}
+// get new certificate here..
+```
+> This allows you to run your renewal script without the need to time it exactly, just run it often enough. (cronjob)
 
 ## Logging
 
@@ -309,12 +367,12 @@ try {
 
 Creates a new ACMECert instance.
 ```php
-public ACMECert::__construct ( bool $live = TRUE )
+public ACMECert::__construct ( string $ca_url = 'https://acme-v02.api.letsencrypt.org/directory' )
 ```
 ###### Parameters
-> **`live`**
+> **`ca_url`**
 >
-> When **FALSE**, the ACME v2 [staging environment](https://acme-staging-v02.api.letsencrypt.org/) is used otherwise the [live environment](https://acme-v02.api.letsencrypt.org/).
+> A string containing the URL to an ACME CA directory endpoint.
 
 ###### Return Values
 > Returns a new ACMECert instance.
@@ -381,16 +439,50 @@ public void ACMECert::loadAccountKey ( mixed $account_key_pem )
 
 ### ACMECert::register
 
-Associate the loaded account key with a Let's Encrypt account and optionally specify contacts.
+Associate the loaded account key with the CA account and optionally specify contacts.
 ```php
 public array ACMECert::register ( bool $termsOfServiceAgreed = FALSE [, mixed $contacts = array() ] )
 ```
 ###### Parameters
 > **`termsOfServiceAgreed`**
 >
-> **WARNING: By passing `TRUE`, you agree to the terms of service of Let's Encrypt. See [Let’s Encrypt Subscriber Agreement](https://letsencrypt.org/repository/) for more information.**
+> By passing `TRUE`, you agree to the Terms Of Service of the selected CA. (Must be set to `TRUE` in order to successully register an account.)
 >
-> Must be set to **TRUE** in order to successully register an account.
+> Hint: Use [getTermsURL()](#acmecertgettermsurl) to get the link to the current Terms Of Service.
+
+
+> **`contacts`**
+>
+> can be one of the following:
+> 1. A string containing an e-mail address
+> 2. Array of e-mail adresses
+###### Return Values
+> Returns an array containing the account information.
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other registration error occured.
+
+---
+
+### ACMECert::registerEAB
+
+Associate the loaded account key with the CA account using External Account Binding (EAB) credentials and optionally specify contacts.
+```php
+public array ACMECert::registerEAB ( bool $termsOfServiceAgreed = FALSE, string $eab_kid, string $eab_hmac [, mixed $contacts = array() ] )
+```
+###### Parameters
+> **`termsOfServiceAgreed`**
+>
+> By passing `TRUE`, you agree to the Terms Of Service of the selected CA. (Must be set to `TRUE` in order to successully register an account.)
+>
+> Hint: Use [getTermsURL()](#acmecertgettermsurl) to get the link to the current Terms Of Service.
+
+> **`eab_kid`**
+>
+> a string specifying the `EAB Key Identifier`
+
+> **`eab_hmac`**
+>
+> a string specifying the `EAB HMAC Key`
 
 > **`contacts`**
 >
@@ -489,7 +581,7 @@ Get certificate-chain (certificate + the intermediate certificate(s)).
 
 *This is what Apache >= 2.4.8 needs for [`SSLCertificateFile`](https://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile), and what Nginx needs for [`ssl_certificate`](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate).*
 ```php
-public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback, bool $authz_reuse = TRUE )
+public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, callable $callback, array $settings = array() )
 ```
 ###### Parameters
 > **`pem`**
@@ -504,7 +596,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 
 > **`domain_config`**
 >
-> An Array defining the domains and the corresponding challenge types to get a certificate for (up to 100 domains per certificate).
+> An Array defining the domains and the corresponding challenge types to get a certificate for.
 >
 > The first one is used as `Common Name` for the certificate.
 >
@@ -537,8 +629,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 > >                          ^^^
 > > ```
 >
-> ###### Parameters
-> **`opts`**
+> The `$opts` array passed to the callback function contains the following keys:
 >
 >> **`$opts['domain']`**
 >>
@@ -559,11 +650,30 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> dns-01 | TXT Resource Record Name | TXT Resource Record Value
 >> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
 
-> **`authz_reuse`** (default: `TRUE`)
+
+> **`settings`** (optional)
 >
-> If `FALSE` the callback function is always called for each domain and does not get skipped due to possibly already valid authorizations (authz) that are reused. This is achieved by deactivating already valid authorizations before getting new ones.
+> This array can have the following keys:
+>> **`authz_reuse`** (boolean / default: `TRUE`)
+>>
+>> If `FALSE` the callback function is always called for each domain and does not get skipped due to possibly already valid authorizations (authz) that are reused. This is achieved by deactivating already valid authorizations before getting new ones.
+>>
+>> > Hint: Under normal circumstances this is only needed when testing the callback function, not in production!
 >
-> > Hint: Under normal circumstances this is only needed when testing the callback function, not in production!
+>> **`notBefore`** / **`notAfter`** (mixed)
+>>
+>> can be one of the following:
+>> * a string containing a RFC 3339 formated date
+>> * a timestamp (integer)
+>>
+>> Example: Certificate valid for 3 days:
+>> ```php
+>> array( 'notAfter' => time() + (60*60*24) * 3 )
+>> ```
+>> or
+>> ```php
+>> array( 'notAfter' => '1970-01-01T01:22:17+01:00' )
+>> ```
 
 ###### Return Values
 > Returns a PEM encoded certificate chain.
@@ -577,6 +687,9 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 Get all (default and alternate) certificate-chains.
 This function takes the same arguments as the [getCertificateChain](#acmecertgetcertificatechain) function above, but it returns an array of certificate chains instead of a single chain.
 
+```php
+public string ACMECert::getCertificateChains ( mixed $pem, array $domain_config, callable $callback, array $settings = array() )
+```
 
 ###### Return Values
 > Returns an array of PEM encoded certificate chains.
@@ -713,6 +826,54 @@ public array ACMECert::splitChain ( string $pem )
 > Returns an array of PEM encoded individual certificates.
 ###### Errors/Exceptions
 > None
+
+---
+
+### ACMECert::getCAAIdentities
+
+Get a list of all CAA Identities for the selected CA. (Useful for setting up CAA DNS Records)
+```php
+public array ACMECert::getCAAIdentities()
+```
+###### Return Values
+> Returns an array containing all CAA Identities for the selected CA.
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the CAA Identities.
+
+---
+
+### ACMECert::getSAN
+
+Get all Subject Alternative Names of given certificate.
+```php
+public array ACMECert::getSAN( mixed $pem )
+```
+
+###### Parameters
+> **`pem`**
+>
+> can be one of the following:
+> * a string beginning with `file://` containing the filename to read a PEM encoded certificate or certificate-chain from.
+> * a string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
+
+
+###### Return Values
+> Returns an array containing all Subject Alternative Names of given certificate.
+###### Errors/Exceptions
+> Throws an `Exception` if an error occured getting the Subject Alternative Names.
+
+---
+
+### ACMECert::getTermsURL
+
+Get URL to Terms Of Service for the selected CA.
+```php
+public array ACMECert::getTermsURL()
+```
+###### Return Values
+> Returns a string containing a URL to the Terms Of Service for the selected CA.
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the Terms Of Service.
 
 ---
 

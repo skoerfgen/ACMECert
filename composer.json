@@ -1,7 +1,7 @@
 {
 	"name": "skoerfgen/acmecert",
-	"version": "3.1.2",
-	"description": "PHP client library for Let's Encrypt (ACME v2 - RFC 8555)",
+	"version": "3.2.0",
+	"description": "PHP client library for Let's Encrypt and other ACME v2 - RFC 8555 compatible Certificate Authorities",
 	"license": "MIT",
 	"authors": [
 		{

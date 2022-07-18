@@ -40,7 +40,7 @@ class ACMECert extends ACMEv2 {
 		return $this->_register($termsOfServiceAgreed,$contacts);
 	}
 
-	public function registerEAB($termsOfServiceAgreed=false,$eab_kid,$eab_hmac,$contacts=array()){
+	public function registerEAB($termsOfServiceAgreed,$eab_kid,$eab_hmac,$contacts=array()){
 		if (!$this->resources) $this->readDirectory();
 
 		$protected=array(

@@ -92,6 +92,8 @@ use skoerfgen\ACMECert\ACMECert;
 
 ## Usage / Examples
 
+* [Simple example to get started](https://github.com/skoerfgen/ACMECert/wiki/Simple-example-to-get-started)
+
 #### Choose Certificate Authority (CA)
 ##### [Let's Encrypt](https://letsencrypt.org/)
 > Live CA

@@ -17,7 +17,7 @@ It is self contained and contains a set of functions allowing you to:
 - and more..
 > see [Function Reference](#function-reference) for a full list
 
-It abstacts away the complexity of the ACME protocol to get a certificate
+It abstracts away the complexity of the ACME protocol to get a certificate
 (create order, fetch authorizations, compute challenge tokens, polling for status, generate CSR,
 finalize order, request certificate) into a single function [getCertificateChain](#acmecertgetcertificatechain) (or [getCertificateChains](#acmecertgetcertificatechains) to also get all alternate chains),
 where you specify a set of domains you want to get a certificate for and which challenge type to use (all [challenge types](https://letsencrypt.org/docs/challenge-types/) are supported).
@@ -70,7 +70,7 @@ git clone https://github.com/skoerfgen/ACMECert
 usage:
 
 ```php
-require 'ACMECert.php';
+require 'ACMECert/ACMECert.php';
 
 use skoerfgen\ACMECert\ACMECert;
 ```
@@ -189,8 +189,12 @@ $handler=function($opts){
   };
 };
 
-$fullchain=$ac->getCertificateChain('file://'.'cert_private_key.pem',$domain_config,$handler);
+// Generate new certificate key
+$private_key=$ac->generateRSAKey(2048);
+
+$fullchain=$ac->getCertificateChain($private_key,$domain_config,$handler);
 file_put_contents('fullchain.pem',$fullchain);
+file_put_contents('private_key.pem',$private_key);
 ```
 
 #### Get Certificate using all (`http-01`,`dns-01` and `tls-alpn-01`) challenge types together

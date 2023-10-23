@@ -286,7 +286,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v3.2.1 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v3.2.2 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();
@@ -300,7 +300,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 				CURLOPT_CUSTOMREQUEST=>$method,
 				CURLOPT_HTTPHEADER=>$header,
 				CURLOPT_POSTFIELDS=>$data,
-				CURLOPT_HEADERFUNCTION=>function($ch,$header)use(&$headers){
+				CURLOPT_HEADERFUNCTION=>static function($ch,$header)use(&$headers){
 					$headers[]=$header;
 					return strlen($header);
 				}

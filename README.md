@@ -329,6 +329,12 @@ ACMECert logs its actions using `error_log`, which logs messages to stderr per d
 error_reporting(E_ALL);
 ini_set('log_errors',1);
 ini_set('error_log',dirname(__FILE__).'/ACMECert.log');
+
+## Disable error output
+
+If you want to disable the error output, you can use the `disableLog` method, Exceptions are nevertheless thrown.
+```php
+$ac->disableLog();
 ```
 
 

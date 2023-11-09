@@ -37,7 +37,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$ch=null,$log=true,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce=null;
+		),$ch=null,$logger=true,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce=null;
 	private $delay_until=null;
 
 	public function __construct($live=true){
@@ -113,16 +113,31 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return $this->kid_header['kid'];
 	}
 
-	public function enableLog(){
-		$this->log = true;
+	public function setLogger($value=true){
+		switch(true){
+			case is_bool($value):
+			break;
+			case is_callable($value):
+			break;
+			default:
+				throw new Exception('setLogger: invalid value provided');
+			break;
+		}
+		$this->logger=$value;
 	}
 
-	public function disableLog(){
-		$this->log = false;
-	}
-	
 	public function log($txt){
-		if($this->log==true) error_log($txt);
+		switch(true){
+			case $this->logger===true:
+				error_log($txt);
+			break;
+			case $this->logger===false:
+			break;
+			default:
+				$fn=$this->logger;
+				$fn($txt);
+			break;
+		}
 	}
 
 	protected function create_ACME_Exception($type,$detail,$subproblems=array()){
@@ -294,7 +309,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v3.2.2 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v3.2.3 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

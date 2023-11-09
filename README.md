@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
-Version: 3.2.2
+Version: 3.2.3
 
 ## Description
 
@@ -324,20 +324,23 @@ if ($days>30) { // renew 30 days before expiry
 
 ## Logging
 
-ACMECert logs its actions using `error_log`, which logs messages to stderr per default in PHP CLI so it is easy to log to a file instead:
+By default ACMECert logs its actions using `error_log` which logs messages to stderr in PHP CLI so it is easy to log to a file instead:
 ```php
 error_reporting(E_ALL);
 ini_set('log_errors',1);
 ini_set('error_log',dirname(__FILE__).'/ACMECert.log');
-
-## Disable error output
-
-If you want to disable the error output, you can use the `disableLog` method, Exceptions are nevertheless thrown.
-```php
-$ac->disableLog();
 ```
 
-
+> To disable the default logging, you can use [`setLogger`](#acmecertsetlog), Exceptions are nevertheless thrown:
+```php
+$ac->setLogger(false);
+```
+> Or you can you set it to a custom callback function:
+```php
+$ac->setLogger(function($txt){
+	echo 'Log Message: '.$txt."\n";
+});
+```
 ## ACME_Exception
 
 If the ACME-Server responded with an error message an `\skoerfgen\ACMECert\ACME_Exception` is thrown. (ACME_Exception extends Exception)
@@ -886,6 +889,29 @@ public array ACMECert::getTermsURL()
 > Returns a string containing a URL to the Terms Of Service for the selected CA.
 ###### Errors/Exceptions
 > Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the Terms Of Service.
+
+---
+
+### ACMECert::setLogger
+
+Turn on/off logging to stderr using `error_log` or provide a custom callback function.
+```php
+public void ACMECert::setLogger( bool|callable $value = TRUE )
+```
+###### Parameters
+> **`value`**
+>
+> - If `TRUE`, logging to stderr using `error_log` is enabled. (default)
+> - If `FALSE`, logging is disabled.
+> - If a callback function is provided, the function gets called with the log message as first argument:
+> ```php
+> void callback( string $txt )
+> ```
+> see [Logging](#logging)
+###### Return Values
+> No value is returned.
+###### Errors/Exceptions
+> Throws an `Exception` if the value provided is not boolean or a callable function.
 
 ---
 

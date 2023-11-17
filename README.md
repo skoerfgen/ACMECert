@@ -1,7 +1,7 @@
 # ACMECert
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
-Version: 3.3.0
+Version: 3.3.1
 
 ## Description
 
@@ -613,7 +613,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >
 > An Array defining the domains and the corresponding challenge types to get a certificate for.
 >
-> The first one is used as `Common Name` for the certificate.
+> The first domain name in the array is used as `Common Name` for the certificate if does not exceed 64 characters, otherwise the `Common Name` field will be empty.
 >
 > Here is an example structure:
 > ```php

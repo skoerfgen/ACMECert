@@ -34,7 +34,7 @@ use Exception;
 use stdClass;
 
 class ACMECert extends ACMEv2 {
-	private $alternate_chains=array();
+	private $alternate_chains=array(),$skip_verify=false,$resume_order=null;
 
 	public function register($termsOfServiceAgreed=false,$contacts=array()){
 		return $this->_register($termsOfServiceAgreed,$contacts);
@@ -154,6 +154,28 @@ class ACMECert extends ACMEv2 {
 		$this->log('Certificate revoked');
 	}
 
+	public function createOrder($domain_config,$callback,$settings=array()){
+		$this->skip_verify=true;
+		try {
+			$order_location=$this->getCertificateChain(null,$domain_config,$callback,$settings);
+		}finally{
+			$this->skip_verify=false;
+		}
+		return $order_location;
+	}
+
+	public function finalizeOrder($pem,$domain_config,$order_location,$callback,$all_chains=false){
+		$this->resume_order=$order_location;
+		try {
+			$ret=$this->{'getCertificateChain'.($all_chains?'s':'')}($pem,$domain_config,function($opts)use($callback){
+				return $callback;
+			});
+		}finally{
+			$this->resume_order=null;
+		}
+		return $ret;
+	}
+
 	public function getCertificateChain($pem,$domain_config,$callback,$settings=array()){
 		$settings=$this->parseSettings($settings);
 
@@ -164,11 +186,22 @@ class ACMECert extends ACMEv2 {
 		$this->getAccountID(); // get account info upfront to avoid mixed up logging order
 
 		// === Order ===
-		$this->log('Creating Order');
-		$ret=$this->request('newOrder',$this->makeOrder($domains,$settings));
-		$order=$ret['body'];
-		$order_location=$ret['headers']['location'];
-		$this->log('Order created: '.$order_location);
+		if ($this->resume_order){
+			$order_location=$this->resume_order;
+			$this->log('Resuming Order');
+			$ret=$this->request($order_location);
+			$order=$ret['body'];
+			if ($order['status']!=='pending' && $order['status']!=='ready'){
+				throw new Exception('Invalid order state "'.$order['status'].'": '.$order_location);
+			}
+			$this->log('Order resumed: '.$order_location);
+		}else{
+			$this->log('Creating Order');
+			$ret=$this->request('newOrder',$this->makeOrder($domains,$settings));
+			$order=$ret['body'];
+			$order_location=$ret['headers']['location'];
+			$this->log('Order created: '.$order_location);
+		}
 
 		// === Authorization ===
 		if ($order['status']==='ready' && $settings['authz_reuse']) {
@@ -239,7 +272,9 @@ class ACMECert extends ACMEv2 {
 						$this->log('Triggering challenge callback for '.$domain.' using '.$type);
 						$remove_cb=$callback($opts);
 
-						$pending_challenges[]=array($remove_cb,$opts,$challenge_url,$auth_url);
+						if (!$this->skip_verify){
+							$pending_challenges[]=array($remove_cb,$opts,$challenge_url,$auth_url);
+						}
 					}
 
 					foreach($pending_challenges as $arr){
@@ -273,6 +308,10 @@ class ACMECert extends ACMEv2 {
 					}
 				}
 			}
+		}
+
+		if ($this->skip_verify){
+			return $order_location;
 		}
 
 		// autodetect if Private Key or CSR is used

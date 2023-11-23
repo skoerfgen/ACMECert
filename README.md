@@ -613,7 +613,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >
 > An Array defining the domains and the corresponding challenge types to get a certificate for.
 >
-> The first domain name in the array is used as `Common Name` for the certificate if does not exceed 64 characters, otherwise the `Common Name` field will be empty.
+> The first domain name in the array is used as `Common Name` for the certificate if it does not exceed 64 characters, otherwise the `Common Name` field will be empty.
 >
 > Here is an example structure:
 > ```php

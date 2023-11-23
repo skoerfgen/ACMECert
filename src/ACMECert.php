@@ -372,7 +372,11 @@ class ACMECert extends ACMEv2 {
 		}
 
 		$fn=$this->tmp_ssl_cnf($domains);
-		$dn=array('commonName'=>reset($domains));
+		$cn=reset($domains);
+		$dn=array();
+		if (strlen($cn)<=64){
+			$dn['commonName']=$cn;
+		}
 		$csr=openssl_csr_new($dn,$domain_key,array(
 			'config'=>$fn,
 			'req_extensions'=>'SAN',

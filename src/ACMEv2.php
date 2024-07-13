@@ -287,7 +287,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return $ret;
 	}
 
-	private function http_request($url,$data=null){
+	protected function http_request($url,$data=null){
 		if ($this->ch===null) {
 			if (extension_loaded('curl') && $this->ch=curl_init()) {
 				$this->log('Using cURL');

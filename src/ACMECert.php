@@ -75,6 +75,45 @@ class ACMECert extends ACMEv2 {
 		return $ret['body'];
 	}
 
+	private function getARICertID($pem){
+		if (version_compare(PHP_VERSION,'7.1.2','<')){
+			throw new Exception('PHP Version >= 7.1.2 required for ARI'); // serialNumberHex - https://github.com/php/php-src/pull/1755
+		}
+		$ret=$this->parseCertificate($pem);
+		if (!isset($ret['extensions']['authorityKeyIdentifier'])) {
+			throw new Exception('authorityKeyIdentifier missing');
+		}
+		$aki=hex2bin(str_replace(':','',substr(trim($ret['extensions']['authorityKeyIdentifier']),6)));
+		if ($aki===false) throw new Exception('Failed to parse authorityKeyIdentifier');
+		$ser=hex2bin(trim($ret['serialNumberHex']));
+		if ($ser===false) throw new Exception('Failed to parse serial');
+		return $this->base64url($aki).'.'.$this->base64url($ser);
+	}
+
+	public function getARI($pem,&$identifier=null){
+		$identifier=$this->getARICertID($pem);
+
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported');
+
+		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$identifier);
+
+		if (!is_array($ret['body']['suggestedWindow'])) throw new Exception('ARI suggestedWindow not present');
+
+		$sw=&$ret['body']['suggestedWindow'];
+
+		if (!isset($sw['start'])) throw new Exception('ARI suggestedWindow start not present');
+		if (!isset($sw['end'])) throw new Exception('ARI suggestedWindow end not present');
+
+		$sw=array_map(array($this,'parseDate'),$sw);
+		return $ret['body'];
+	}
+
+	private function parseDate($str){
+		$p=date_parse($str);
+		return gmmktime($p['hour'],$p['minute'],$p['second'],$p['month'],$p['day'],$p['year']);
+	}
+
 	public function update($contacts=array()){
 		$this->log('Updating account');
 		$ret=$this->request($this->getAccountID(),array(
@@ -445,7 +484,7 @@ class ACMECert extends ACMEv2 {
 
 		$diff=array_diff_key(
 			$opts,
-			array_flip(array('authz_reuse','notAfter','notBefore'))
+			array_flip(array('authz_reuse','notAfter','notBefore','replaces'))
 		);
 
 		if (!empty($diff)){
@@ -474,6 +513,9 @@ class ACMECert extends ACMEv2 {
 		);
 		$this->setRFC3339Date($order,'notAfter',$opts);
 		$this->setRFC3339Date($order,'notBefore',$opts);
+
+		if (isset($opts['replaces']))$order['replaces']=$opts['replaces'];
+
 		return $order;
 	}
 

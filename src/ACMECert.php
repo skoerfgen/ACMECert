@@ -523,7 +523,10 @@ class ACMECert extends ACMEv2 {
 		$this->setRFC3339Date($order,'notAfter',$opts);
 		$this->setRFC3339Date($order,'notBefore',$opts);
 
-		if (isset($opts['replaces']))$order['replaces']=$opts['replaces'];
+		if (isset($opts['replaces'])) { // ARI
+			$order['replaces']=$opts['replaces'];
+			$this->log('Replacing Certificate: '.$opts['replaces']);
+		}
 
 		return $order;
 	}

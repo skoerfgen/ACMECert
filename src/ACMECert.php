@@ -91,12 +91,13 @@ class ACMECert extends ACMEv2 {
 	}
 
 	public function getARI($pem,&$identifier=null){
-		$identifier=$this->getARICertID($pem);
+		$identifier=null;
+		$id=$this->getARICertID($pem);
 
 		if (!$this->resources) $this->readDirectory();
 		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported');
 
-		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$identifier);
+		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$id);
 
 		if (!is_array($ret['body']['suggestedWindow'])) throw new Exception('ARI suggestedWindow not present');
 
@@ -106,6 +107,8 @@ class ACMECert extends ACMEv2 {
 		if (!isset($sw['end'])) throw new Exception('ARI suggestedWindow end not present');
 
 		$sw=array_map(array($this,'parseDate'),$sw);
+
+		$identifier=$id;
 		return $ret['body'];
 	}
 

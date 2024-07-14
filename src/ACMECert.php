@@ -110,8 +110,7 @@ class ACMECert extends ACMEv2 {
 	}
 
 	private function parseDate($str){
-		$p=date_parse($str);
-		return gmmktime($p['hour'],$p['minute'],$p['second'],$p['month'],$p['day'],$p['year']);
+		return strtotime(preg_replace('/(\.\d\d)\d+/','$1',$str));
 	}
 
 	public function update($contacts=array()){

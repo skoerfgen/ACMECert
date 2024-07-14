@@ -455,6 +455,13 @@ class ACMECert extends ACMEv2 {
 		return ($ret['validTo_time_t']-time())/86400;
 	}
 
+	public function getRemainingPercent($cert_pem){
+		$ret=$this->parseCertificate($cert_pem);
+		$total=$ret['validTo_time_t']-$ret['validFrom_time_t'];
+		$used=time()-$ret['validFrom_time_t'];
+		return (1-max(0,min(1,$used/$total)))*100;
+	}
+
 	public function generateALPNCertificate($domain_key_pem,$domain,$token){
 		$domains=array($domain);
 		$csr=$this->generateCSR($domain_key_pem,$domains);

@@ -719,6 +719,8 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> The ARI Certificate ID uniquely identifying a previously-issued certificate which this order is intended to replace.
 >>
 >> Use: [getARI](#acmecertgetari) to get the ARI Certificate ID for a certificate.
+>>
+>> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
 
 
 ###### Return Values
@@ -984,6 +986,8 @@ public array ACMECert::getARI( mixed $pem, string &$ari_cert_id = null )
 > If this parameter is present, it will be set to the ARI Certificate ID of the given certificate.
 >
 > See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where the ARI Certificate ID can be used to replace an existing certificate.
+>
+> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
 ###### Return Values
 > Returns an Array with the following keys:
 >

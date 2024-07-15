@@ -75,47 +75,6 @@ class ACMECert extends ACMEv2 {
 		return $ret['body'];
 	}
 
-	private function getARICertID($pem){
-		if (version_compare(PHP_VERSION,'7.1.2','<')){
-			throw new Exception('PHP Version >= 7.1.2 required for ARI'); // serialNumberHex - https://github.com/php/php-src/pull/1755
-		}
-		$ret=$this->parseCertificate($pem);
-		if (!isset($ret['extensions']['authorityKeyIdentifier'])) {
-			throw new Exception('authorityKeyIdentifier missing');
-		}
-		$aki=hex2bin(str_replace(':','',substr(trim($ret['extensions']['authorityKeyIdentifier']),6)));
-		if ($aki===false) throw new Exception('Failed to parse authorityKeyIdentifier');
-		$ser=hex2bin(trim($ret['serialNumberHex']));
-		if ($ser===false) throw new Exception('Failed to parse serial');
-		return $this->base64url($aki).'.'.$this->base64url($ser);
-	}
-
-	public function getARI($pem,&$ari_cert_id=null){
-		$ari_cert_id=null;
-		$id=$this->getARICertID($pem);
-
-		if (!$this->resources) $this->readDirectory();
-		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported');
-
-		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$id);
-
-		if (!is_array($ret['body']['suggestedWindow'])) throw new Exception('ARI suggestedWindow not present');
-
-		$sw=&$ret['body']['suggestedWindow'];
-
-		if (!isset($sw['start'])) throw new Exception('ARI suggestedWindow start not present');
-		if (!isset($sw['end'])) throw new Exception('ARI suggestedWindow end not present');
-
-		$sw=array_map(array($this,'parseDate'),$sw);
-
-		$ari_cert_id=$id;
-		return $ret['body'];
-	}
-
-	private function parseDate($str){
-		return strtotime(preg_replace('/(\.\d\d)\d+/','$1',$str));
-	}
-
 	public function update($contacts=array()){
 		$this->log('Updating account');
 		$ret=$this->request($this->getAccountID(),array(
@@ -484,6 +443,47 @@ class ACMECert extends ACMEv2 {
 			throw new Exception('Could not export self signed certificate ! ('.$this->get_openssl_error().')');
 		}
 		return $out;
+	}
+
+	public function getARI($pem,&$ari_cert_id=null){
+		$ari_cert_id=null;
+		$id=$this->getARICertID($pem);
+
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported');
+
+		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$id);
+
+		if (!is_array($ret['body']['suggestedWindow'])) throw new Exception('ARI suggestedWindow not present');
+
+		$sw=&$ret['body']['suggestedWindow'];
+
+		if (!isset($sw['start'])) throw new Exception('ARI suggestedWindow start not present');
+		if (!isset($sw['end'])) throw new Exception('ARI suggestedWindow end not present');
+
+		$sw=array_map(array($this,'parseDate'),$sw);
+
+		$ari_cert_id=$id;
+		return $ret['body'];
+	}
+
+	private function getARICertID($pem){
+		if (version_compare(PHP_VERSION,'7.1.2','<')){
+			throw new Exception('PHP Version >= 7.1.2 required for ARI'); // serialNumberHex - https://github.com/php/php-src/pull/1755
+		}
+		$ret=$this->parseCertificate($pem);
+		if (!isset($ret['extensions']['authorityKeyIdentifier'])) {
+			throw new Exception('authorityKeyIdentifier missing');
+		}
+		$aki=hex2bin(str_replace(':','',substr(trim($ret['extensions']['authorityKeyIdentifier']),6)));
+		if ($aki===false) throw new Exception('Failed to parse authorityKeyIdentifier');
+		$ser=hex2bin(trim($ret['serialNumberHex']));
+		if ($ser===false) throw new Exception('Failed to parse serial');
+		return $this->base64url($aki).'.'.$this->base64url($ser);
+	}
+
+	private function parseDate($str){
+		return strtotime(preg_replace('/(\.\d\d)\d+/','$1',$str));
 	}
 
 	private function parseSettings($opts){

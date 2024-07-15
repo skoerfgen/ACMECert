@@ -45,7 +45,7 @@ Instead of returning `FALSE` on error, every function in ACMECert throws an [Exc
 if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded with an error message.
 
 ## Requirements
-- [x] PHP 5.3 or higher (for EC keys PHP 7.1 or higher is required)
+- [x] PHP 5.6 or higher (for EC keys PHP 7.1 or higher) (for ARI PHP 7.1.2 or higher)
 - [x] [OpenSSL extension](https://www.php.net/manual/de/book.openssl.php)
 - [x] enabled [fopen wrappers](https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-fopen) (allow_url_fopen=1) **or** [cURL extension](https://www.php.net/manual/en/book.curl.php)
 

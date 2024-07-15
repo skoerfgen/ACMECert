@@ -90,8 +90,8 @@ class ACMECert extends ACMEv2 {
 		return $this->base64url($aki).'.'.$this->base64url($ser);
 	}
 
-	public function getARI($pem,&$identifier=null){
-		$identifier=null;
+	public function getARI($pem,&$ari_cert_id=null){
+		$ari_cert_id=null;
 		$id=$this->getARICertID($pem);
 
 		if (!$this->resources) $this->readDirectory();
@@ -108,7 +108,7 @@ class ACMECert extends ACMEv2 {
 
 		$sw=array_map(array($this,'parseDate'),$sw);
 
-		$identifier=$id;
+		$ari_cert_id=$id;
 		return $ret['body'];
 	}
 

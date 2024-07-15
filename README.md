@@ -13,7 +13,8 @@ It is self contained and contains a set of functions allowing you to:
 - generate [RSA](#acmecertgeneratersakey) / [EC (Elliptic Curve)](#acmecertgenerateeckey) keys
 - manage account: [register](#acmecertregister)/[External Account Binding (EAB)](#acmecertregistereab)/[update](#acmecertupdate)/[deactivate](#acmecertdeactivateaccount) and [account key roll-over](#acmecertkeychange)
 - [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates (to renew a certificate just get a new one)
-- [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) a certificate is still valid
+- [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) or [percentage](#acmecertgetremainingpercent) a certificate is still valid
+- get/use [ACME Renewal Information](#acmecertgetari) (ARI)
 - and more..
 > see [Function Reference](#function-reference) for a full list
 
@@ -312,6 +313,30 @@ $ret=$ac->deactivateAccount();
 print_r($ret);
 ```
 
+#### Get/Use ACME Renewal Information
+```php
+$ret=$ac->getARI('file://'.'fullchain.pem',$ari_cert_id);
+if ($ret['suggestedWindow']['start']-time()>0) {
+  die('Certificate still good, exiting..');
+}
+
+$settings=array(
+  'replaces'=>$ari_cert_id
+);
+$ac->getCertificateChain(..., ..., ..., $settings);
+```
+
+#### Get Remaining Percentage
+```php
+$percent=$ac->getRemainingPercent('file://'.'fullchain.pem'); // certificate or certificate-chain
+if ($precent>33.333) { // certificate has still more than 1/3 (33.333%) of its lifetime left
+  die('Certificate still good, exiting..');
+}
+// get new certificate here..
+```
+> This allows you to run your renewal script without the need to time it exactly, just run it often enough. (cronjob)
+
+
 #### Get Remaining Days
 ```php
 $days=$ac->getRemainingDays('file://'.'fullchain.pem'); // certificate or certificate-chain
@@ -320,7 +345,6 @@ if ($days>30) { // renew 30 days before expiry
 }
 // get new certificate here..
 ```
-> This allows you to run your renewal script without the need to time it exactly, just run it often enough. (cronjob)
 
 ## Logging
 
@@ -689,6 +713,13 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> ```php
 >> array( 'notAfter' => '1970-01-01T01:22:17+01:00' )
 >> ```
+>>
+>> **`replaces`** (string)
+>>
+>> The ARI Certificate ID uniquely identifying a previously-issued certificate which this order is intended to replace.
+>>
+>> Use: [getARI](#acmecertgetari) to get the ARI Certificate ID for a certificate.
+
 
 ###### Return Values
 > Returns a PEM encoded certificate chain.
@@ -809,6 +840,26 @@ public array ACMECert::parseCertificate ( mixed $pem )
 
 ---
 
+### ACMECert::getRemainingPercent
+
+Get the percentage the certificate is still valid.
+
+```php
+public float ACMECert::getRemainingPercent( mixed $pem )
+```
+###### Parameters
+> **`pem`**
+>
+> can be one of the following:
+> * a string beginning with `file://` containing the filename to read a PEM encoded certificate or certificate-chain from.
+> * a string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
+###### Return Values
+> A float value containing the percentage the certificate is still valid.
+###### Errors/Exceptions
+> Throws an `Exception` if the certificate could not be parsed.
+
+---
+
 ### ACMECert::getRemainingDays
 
 Get the number of days the certificate is still valid.
@@ -912,6 +963,39 @@ public void ACMECert::setLogger( bool|callable $value = TRUE )
 > No value is returned.
 ###### Errors/Exceptions
 > Throws an `Exception` if the value provided is not boolean or a callable function.
+
+---
+### ACMECert::getARI
+
+Get ACME Renewal Information (ARI) for a given certificate.
+
+```php
+public array ACMECert::getARI( mixed $pem, string &$ari_cert_id = null )
+```
+###### Parameters
+> **`pem`**
+>
+> can be one of the following:
+> * a string beginning with `file://` containing the filename to read a PEM encoded certificate or certificate-chain from.
+> * a string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
+>
+> **`ari_cert_id`**
+>
+> If this parameter is present, it will be set to the ARI Certificate ID of the given certificate.
+>
+> See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where the ARI Certificate ID can be used to replace an existing certificate.
+###### Return Values
+> Returns an Array with the following keys:
+>
+>> `suggestedWindow` (array)
+>>
+>> An Array with two keys, `start` and `end`, whose values are unix timestamps, which bound the window of time in which the CA recommends renewing the certificate.
+>>
+>> `explanationURL` (string, optional)
+>>
+>> A URL pointing to a page which may explain why the suggested renewal window is what it is. For example, it may be a page explaining the CA's dynamic load-balancing strategy, or a page documenting which certificates are affected by a mass revocation event. 
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the ACME Renewal Information.
 
 ---
 

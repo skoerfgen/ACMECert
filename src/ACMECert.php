@@ -483,7 +483,9 @@ class ACMECert extends ACMEv2 {
 	}
 
 	private function parseDate($str){
-		return strtotime(preg_replace('/(\.\d\d)\d+/','$1',$str));
+		$ret=strtotime(preg_replace('/(\.\d\d)\d+/','$1',$str));
+		if ($ret===false) throw new Exception('Failed to parse date: '.$str);
+		return $ret;
 	}
 
 	private function parseSettings($opts){

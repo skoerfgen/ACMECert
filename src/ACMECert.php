@@ -472,13 +472,19 @@ class ACMECert extends ACMEv2 {
 			throw new Exception('PHP Version >= 7.1.2 required for ARI'); // serialNumberHex - https://github.com/php/php-src/pull/1755
 		}
 		$ret=$this->parseCertificate($pem);
+
 		if (!isset($ret['extensions']['authorityKeyIdentifier'])) {
 			throw new Exception('authorityKeyIdentifier missing');
 		}
 		$aki=hex2bin(str_replace(':','',substr(trim($ret['extensions']['authorityKeyIdentifier']),6)));
-		if ($aki===false) throw new Exception('Failed to parse authorityKeyIdentifier');
+		if (!$aki) throw new Exception('Failed to parse authorityKeyIdentifier');
+
+		if (!isset($ret['serialNumberHex'])) {
+			throw new Exception('serialNumberHex missing');
+		}
 		$ser=hex2bin(trim($ret['serialNumberHex']));
-		if ($ser===false) throw new Exception('Failed to parse serial');
+		if (!$ser) throw new Exception('Failed to parse serialNumberHex');
+
 		return $this->base64url($aki).'.'.$this->base64url($ser);
 	}
 

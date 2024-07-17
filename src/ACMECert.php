@@ -417,6 +417,13 @@ class ACMECert extends ACMEv2 {
 		return ($ret['validTo_time_t']-time())/86400;
 	}
 
+	public function getRemainingPercent($cert_pem){
+		$ret=$this->parseCertificate($cert_pem);
+		$total=$ret['validTo_time_t']-$ret['validFrom_time_t'];
+		$used=time()-$ret['validFrom_time_t'];
+		return (1-max(0,min(1,$used/$total)))*100;
+	}
+
 	public function generateALPNCertificate($domain_key_pem,$domain,$token){
 		$domains=array($domain);
 		$csr=$this->generateCSR($domain_key_pem,$domains);
@@ -438,6 +445,55 @@ class ACMECert extends ACMEv2 {
 		return $out;
 	}
 
+	public function getARI($pem,&$ari_cert_id=null){
+		$ari_cert_id=null;
+		$id=$this->getARICertID($pem);
+
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported');
+
+		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$id);
+
+		if (!is_array($ret['body']['suggestedWindow'])) throw new Exception('ARI suggestedWindow not present');
+
+		$sw=&$ret['body']['suggestedWindow'];
+
+		if (!isset($sw['start'])) throw new Exception('ARI suggestedWindow start not present');
+		if (!isset($sw['end'])) throw new Exception('ARI suggestedWindow end not present');
+
+		$sw=array_map(array($this,'parseDate'),$sw);
+
+		$ari_cert_id=$id;
+		return $ret['body'];
+	}
+
+	private function getARICertID($pem){
+		if (version_compare(PHP_VERSION,'7.1.2','<')){
+			throw new Exception('PHP Version >= 7.1.2 required for ARI'); // serialNumberHex - https://github.com/php/php-src/pull/1755
+		}
+		$ret=$this->parseCertificate($pem);
+
+		if (!isset($ret['extensions']['authorityKeyIdentifier'])) {
+			throw new Exception('authorityKeyIdentifier missing');
+		}
+		$aki=hex2bin(str_replace(':','',substr(trim($ret['extensions']['authorityKeyIdentifier']),6)));
+		if (!$aki) throw new Exception('Failed to parse authorityKeyIdentifier');
+
+		if (!isset($ret['serialNumberHex'])) {
+			throw new Exception('serialNumberHex missing');
+		}
+		$ser=hex2bin(trim($ret['serialNumberHex']));
+		if (!$ser) throw new Exception('Failed to parse serialNumberHex');
+
+		return $this->base64url($aki).'.'.$this->base64url($ser);
+	}
+
+	private function parseDate($str){
+		$ret=strtotime(preg_replace('/(\.\d\d)\d+/','$1',$str));
+		if ($ret===false) throw new Exception('Failed to parse date: '.$str);
+		return $ret;
+	}
+
 	private function parseSettings($opts){
 		// authz_reuse: backwards compatibility to ACMECert v3.1.2 or older
 		if (!is_array($opts)) $opts=array('authz_reuse'=>(bool)$opts);
@@ -445,7 +501,7 @@ class ACMECert extends ACMEv2 {
 
 		$diff=array_diff_key(
 			$opts,
-			array_flip(array('authz_reuse','notAfter','notBefore'))
+			array_flip(array('authz_reuse','notAfter','notBefore','replaces'))
 		);
 
 		if (!empty($diff)){
@@ -474,6 +530,12 @@ class ACMECert extends ACMEv2 {
 		);
 		$this->setRFC3339Date($order,'notAfter',$opts);
 		$this->setRFC3339Date($order,'notBefore',$opts);
+
+		if (isset($opts['replaces'])) { // ARI
+			$order['replaces']=$opts['replaces'];
+			$this->log('Replacing Certificate: '.$opts['replaces']);
+		}
+
 		return $order;
 	}
 

@@ -315,13 +315,13 @@ print_r($ret);
 
 #### Get/Use ACME Renewal Information
 ```php
-$ret=$ac->getARI('file://'.'fullchain.pem',$ari_cert_id);
+$ret=$ac->getARI('file://'.'fullchain.pem');
 if ($ret['suggestedWindow']['start']-time()>0) {
   die('Certificate still good, exiting..');
 }
 
 $settings=array(
-  'replaces'=>$ari_cert_id
+  'replaces'=>$ret['ari_cert_id']
 );
 $ac->getCertificateChain(..., ..., ..., $settings);
 ```

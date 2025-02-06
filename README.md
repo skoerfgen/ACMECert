@@ -972,7 +972,7 @@ public void ACMECert::setLogger( bool|callable $value = TRUE )
 Get ACME Renewal Information (ARI) for a given certificate.
 
 ```php
-public array ACMECert::getARI( mixed $pem, string &$ari_cert_id = null )
+public array ACMECert::getARI( mixed $pem )
 ```
 ###### Parameters
 > **`pem`**
@@ -980,14 +980,6 @@ public array ACMECert::getARI( mixed $pem, string &$ari_cert_id = null )
 > can be one of the following:
 > * a string beginning with `file://` containing the filename to read a PEM encoded certificate or certificate-chain from.
 > * a string containing the content of a certificate or certificate-chain, PEM encoded, may start with `-----BEGIN CERTIFICATE-----`
->
-> **`ari_cert_id`**
->
-> If this parameter is present, it will be set to the ARI CertID of the given certificate.
->
-> See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where the ARI CertID can be used to replace an existing certificate.
->
-> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
 ###### Return Values
 > Returns an Array with the following keys:
 >
@@ -997,7 +989,22 @@ public array ACMECert::getARI( mixed $pem, string &$ari_cert_id = null )
 >>
 >> `explanationURL` (string, optional)
 >>
->> A URL pointing to a page which may explain why the suggested renewal window is what it is. For example, it may be a page explaining the CA's dynamic load-balancing strategy, or a page documenting which certificates are affected by a mass revocation event. 
+>> If present, contains a URL pointing to a page which may explain why the suggested renewal window is what it is. For example, it may be a page explaining the CA's dynamic load-balancing strategy, or a page documenting which certificates are affected by a mass revocation event.
+>>
+>> `ari_cert_id` (string)
+>>
+>> The ARI CertID of the given certificate.
+>> 
+>> See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where the ARI CertID can be used to replace an existing certificate.
+>> 
+>> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
+>>
+>> `retry_after` (int, optional)
+>>
+>> If present, contains the number of seconds to wait before calling getARI again after the Retry-After period has
+passed, as the server may provide a different suggestedWindow.
+>>
+>> Clients SHOULD set reasonable limits on the their checking interval. For example, values under one minute could be treated as if they were one minute, and values over one day could be treated as if they were one day.
 ###### Errors/Exceptions
 > Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the ACME Renewal Information.
 

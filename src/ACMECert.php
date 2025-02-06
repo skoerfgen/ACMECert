@@ -450,9 +450,10 @@ class ACMECert extends ACMEv2 {
 		$id=$this->getARICertID($pem);
 
 		if (!$this->resources) $this->readDirectory();
-		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported');
+		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported by CA');
 
 		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$id);
+		$this->delay_until=null;
 
 		if (!is_array($ret['body']['suggestedWindow'])) throw new Exception('ARI suggestedWindow not present');
 
@@ -463,8 +464,15 @@ class ACMECert extends ACMEv2 {
 
 		$sw=array_map(array($this,'parseDate'),$sw);
 
+		$out=$ret['body'];
+
+		if (isset($ret['headers']['retry-after'])){
+			$out['retry_after']=$this->parseRetryAfterHeader($ret['headers']['retry-after']);
+		}
+
+		$out['ari_cert_id']=$id;
 		$ari_cert_id=$id;
-		return $ret['body'];
+		return $out;
 	}
 
 	private function getARICertID($pem){

@@ -1001,8 +1001,7 @@ public array ACMECert::getARI( mixed $pem )
 >>
 >> `retry_after` (int, optional)
 >>
->> If present, contains the number of seconds to wait before calling getARI again after the Retry-After period has
-passed, as the server may provide a different suggestedWindow.
+>> If present, this value indicates the number of seconds a client should wait before retrying a request to [getARI](#acmecertgetari) for a given certificate, as the server may provide a different suggestedWindow.
 >>
 >> Clients SHOULD set reasonable limits on the their checking interval. For example, values under one minute could be treated as if they were one minute, and values over one day could be treated as if they were one day.
 ###### Errors/Exceptions

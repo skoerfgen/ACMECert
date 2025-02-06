@@ -447,11 +447,13 @@ class ACMECert extends ACMEv2 {
 
 	public function getARI($pem,&$ari_cert_id=null){
 		$ari_cert_id=null;
+
 		$id=$this->getARICertID($pem);
 
 		if (!$this->resources) $this->readDirectory();
 		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported by CA');
 
+		$this->log('Requesting ACME Renewal Information');
 		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$id);
 		$this->delay_until=null;
 

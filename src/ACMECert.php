@@ -466,6 +466,12 @@ class ACMECert extends ACMEv2 {
 
 		$out=$ret['body'];
 
+		if (isset($out['explanationURL'])){
+			if (trim($out['explanationURL'])===''){
+				unset($out['explanationURL']);
+			}
+		}
+
 		if (isset($ret['headers']['retry-after'])){
 			$tmp=$this->parseRetryAfterHeader($ret['headers']['retry-after']);
 			if ($tmp>0){

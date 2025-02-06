@@ -42,7 +42,7 @@ $ac->getCertificateChain(..., ..., $handler);
 > also see the [Get Certificate](#get-certificate-using-http-01-challenge) examples below.
 
 Instead of returning `FALSE` on error, every function in ACMECert throws an [Exception](http://php.net/manual/en/class.exception.php)
-if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server reponded with an error message.
+if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server responded with an error message.
 
 ## Requirements
 - [x] PHP 5.6 or higher (for EC keys PHP 7.1 or higher) (for ARI PHP 7.1.2 or higher)
@@ -382,7 +382,7 @@ try {
   if ($e->getType()=='urn:ietf:params:acme:error:accountDoesNotExist'){
     echo 'Account does not exist'.PHP_EOL;
   }else{
-    throw $e; // another error occured
+    throw $e; // another error occurred
   }
 }
 ```
@@ -485,7 +485,7 @@ public array ACMECert::register ( bool $termsOfServiceAgreed = FALSE [, mixed $c
 ###### Parameters
 > **`termsOfServiceAgreed`**
 >
-> By passing `TRUE`, you agree to the Terms Of Service of the selected CA. (Must be set to `TRUE` in order to successully register an account.)
+> By passing `TRUE`, you agree to the Terms Of Service of the selected CA. (Must be set to `TRUE` in order to successfully register an account.)
 >
 > Hint: Use [getTermsURL()](#acmecertgettermsurl) to get the link to the current Terms Of Service.
 
@@ -494,11 +494,11 @@ public array ACMECert::register ( bool $termsOfServiceAgreed = FALSE [, mixed $c
 >
 > can be one of the following:
 > 1. A string containing an e-mail address
-> 2. Array of e-mail adresses
+> 2. Array of e-mail addresses
 ###### Return Values
 > Returns an array containing the account information.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other registration error occured.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other registration error occurred.
 
 ---
 
@@ -511,7 +511,7 @@ public array ACMECert::registerEAB ( bool $termsOfServiceAgreed, string $eab_kid
 ###### Parameters
 > **`termsOfServiceAgreed`**
 >
-> By passing `TRUE`, you agree to the Terms Of Service of the selected CA. (Must be set to `TRUE` in order to successully register an account.)
+> By passing `TRUE`, you agree to the Terms Of Service of the selected CA. (Must be set to `TRUE` in order to successfully register an account.)
 >
 > Hint: Use [getTermsURL()](#acmecertgettermsurl) to get the link to the current Terms Of Service.
 
@@ -527,11 +527,11 @@ public array ACMECert::registerEAB ( bool $termsOfServiceAgreed, string $eab_kid
 >
 > can be one of the following:
 > 1. A string containing an e-mail address
-> 2. Array of e-mail adresses
+> 2. Array of e-mail addresses
 ###### Return Values
 > Returns an array containing the account information.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other registration error occured.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other registration error occurred.
 
 ---
 
@@ -546,11 +546,11 @@ public array ACMECert::update ( mixed $contacts = array() )
 >
 > can be one of the following:
 > * A string containing an e-mail address
-> * Array of e-mail adresses
+> * Array of e-mail addresses
 ###### Return Values
 > Returns an array containing the account information.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured updating the account.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred updating the account.
 
 ---
 
@@ -563,7 +563,7 @@ public array ACMECert::getAccount()
 ###### Return Values
 > Returns an array containing the account information.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the account information.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the account information.
 
 ---
 
@@ -576,7 +576,7 @@ public string ACMECert::getAccountID()
 ###### Return Values
 > Returns the Account ID
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the account id.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the account id.
 
 ---
 
@@ -597,7 +597,7 @@ public array ACMECert::keyChange ( mixed $new_account_key_pem )
 ###### Return Values
 > Returns an array containing the account information.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured during key change.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred during key change.
 
 ---
 
@@ -610,7 +610,7 @@ public array ACMECert::deactivateAccount()
 ###### Return Values
 > Returns an array containing the account information.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured during account deactivation.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred during account deactivation.
 
 ---
 
@@ -662,7 +662,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >
 > Inside a callback function you can return another callback function, which gets invoked after the verification completed and the challenge tokens can be removed again.
 >
-> > Hint: To get access to variables of the parent scope inside the callback function use the [`use`](http://php.net/manual/en/functions.anonymous.php) languange construct:
+> > Hint: To get access to variables of the parent scope inside the callback function use the [`use`](http://php.net/manual/en/functions.anonymous.php) language construct:
 > > ```php
 > > $handler=function($opts) use ($variable_from_parent_scope){};
 > >                          ^^^
@@ -702,7 +702,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> **`notBefore`** / **`notAfter`** (mixed)
 >>
 >> can be one of the following:
->> * a string containing a RFC 3339 formated date
+>> * a string containing a RFC 3339 formatted date
 >> * a timestamp (integer)
 >>
 >> Example: Certificate valid for 3 days:
@@ -726,7 +726,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 ###### Return Values
 > Returns a PEM encoded certificate chain.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured obtaining the certificate.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred obtaining the certificate.
 
 ---
 
@@ -746,7 +746,7 @@ public string ACMECert::getCertificateChains ( mixed $pem, array $domain_config,
 >
 > The first element of the returned array is the default chain.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured obtaining the certificate chains.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred obtaining the certificate chains.
 
 ---
 
@@ -765,9 +765,9 @@ public void ACMECert::revoke ( mixed $pem )
 ###### Return Values
 > No value is returned.
 >
-> If the function completes without Exception, the certificate was successully revoked.
+> If the function completes without Exception, the certificate was successfully revoked.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured revoking the certificate.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred revoking the certificate.
 
 ---
 
@@ -906,7 +906,7 @@ public array ACMECert::getCAAIdentities()
 ###### Return Values
 > Returns an array containing all CAA Identities for the selected CA.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the CAA Identities.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the CAA Identities.
 
 ---
 
@@ -928,7 +928,7 @@ public array ACMECert::getSAN( mixed $pem )
 ###### Return Values
 > Returns an array containing all Subject Alternative Names of given certificate.
 ###### Errors/Exceptions
-> Throws an `Exception` if an error occured getting the Subject Alternative Names.
+> Throws an `Exception` if an error occurred getting the Subject Alternative Names.
 
 ---
 
@@ -941,7 +941,7 @@ public array ACMECert::getTermsURL()
 ###### Return Values
 > Returns a string containing a URL to the Terms Of Service for the selected CA.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the Terms Of Service.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the Terms Of Service.
 
 ---
 
@@ -1006,7 +1006,7 @@ passed, as the server may provide a different suggestedWindow.
 >>
 >> Clients SHOULD set reasonable limits on the their checking interval. For example, values under one minute could be treated as if they were one minute, and values over one day could be treated as if they were one day.
 ###### Errors/Exceptions
-> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occured getting the ACME Renewal Information.
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the ACME Renewal Information.
 
 ---
 

@@ -467,7 +467,10 @@ class ACMECert extends ACMEv2 {
 		$out=$ret['body'];
 
 		if (isset($ret['headers']['retry-after'])){
-			$out['retry_after']=$this->parseRetryAfterHeader($ret['headers']['retry-after']);
+			$tmp=$this->parseRetryAfterHeader($ret['headers']['retry-after']);
+			if ($tmp>0){
+				$out['retry_after']=$tmp;
+			}
 		}
 
 		$out['ari_cert_id']=$id;

@@ -13,8 +13,7 @@ PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME
 
 ## Description
 
-ACMECert is designed to help you to setup an automated SSL/TLS-certificate/renewal process
-with a few lines of PHP.
+ACMECert is designed to help you set up an automated SSL/TLS certificate/renewal process with just a few lines of PHP.
 
 It is self contained and contains a set of functions allowing you to:
 

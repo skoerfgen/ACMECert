@@ -3,6 +3,15 @@
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
 Version: 3.5.0
 
+## Table of Contents
+- [Description](#description)
+- [Requirements](#requirements)
+- [Require ACMECert](#require-acmecert)
+- [Usage / Examples](#usage--examples)
+- [Logging](#logging)
+- [ACME_Exception](#acme_exception)
+- [Function Reference](#function-reference)
+
 ## Description
 
 ACMECert is designed to help you to setup an automated SSL/TLS-certificate/renewal process

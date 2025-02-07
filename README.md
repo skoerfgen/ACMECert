@@ -143,7 +143,7 @@ $ac=new ACMECert('https://acme.zerossl.com/v2/DV90');
 
 ##### or any other ([ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555)) compatible CA
 ```php
-$ac=new ACMECert('INSERT_URL_TO_AMCE_CA_DIRECTORY_HERE');
+$ac=new ACMECert('INSERT_URL_TO_ACME_CA_DIRECTORY_HERE');
 ```
 
 #### Generate RSA Private Key
@@ -329,7 +329,7 @@ $ac->getCertificateChain(..., ..., ..., $settings);
 #### Get Remaining Percentage
 ```php
 $percent=$ac->getRemainingPercent('file://'.'fullchain.pem'); // certificate or certificate-chain
-if ($precent>33.333) { // certificate has still more than 1/3 (33.333%) of its lifetime left
+if ($percent>33.333) { // certificate has still more than 1/3 (33.333%) of its lifetime left
   die('Certificate still good, exiting..');
 }
 // get new certificate here..
@@ -1003,7 +1003,7 @@ public array ACMECert::getARI( mixed $pem )
 >>
 >> If present, this value indicates the number of seconds a client should wait before retrying a request to [getARI](#acmecertgetari) for a given certificate, as the server may provide a different suggestedWindow.
 >>
->> Clients SHOULD set reasonable limits on the their checking interval. For example, values under one minute could be treated as if they were one minute, and values over one day could be treated as if they were one day.
+>> Clients SHOULD set reasonable limits on their checking interval. For example, values under one minute could be treated as if they were one minute, and values over one day could be treated as if they were one day.
 ###### Errors/Exceptions
 > Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the ACME Renewal Information.
 

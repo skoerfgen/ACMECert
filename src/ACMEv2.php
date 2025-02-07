@@ -37,8 +37,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$ch=null,$logger=true,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce=null;
-	private $delay_until=null;
+		),$ch=null,$logger=true,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce=null,$delay_until=null;
 
 	public function __construct($live=true){
 		if (is_bool($live)){ // backwards compatibility to ACMECert v3.1.2 or older
@@ -301,7 +300,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 
 		if ($this->delay_until!==null){
 			$delta=$this->delay_until-time();
-			if ($delta>0){
+			if ($delta>0 && $delta<300){ // ignore delay if not in range 1s..5min
 				$this->log('Delaying '.$delta.'s (rate limit)');
 				sleep($delta);
 			}
@@ -309,7 +308,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v3.4.1 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v3.5.0 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();
@@ -382,14 +381,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		if (!empty($headers['replay-nonce'])) $this->nonce=$headers['replay-nonce'];
 
 		if (isset($headers['retry-after'])){
-			if (is_numeric($headers['retry-after'])){
-				$this->delay_until=time()+ceil($headers['retry-after']);
-			}else{
-				$this->delay_until=strtotime($headers['retry-after']);
-			}
-			$tmp=$this->delay_until-time();
-			// ignore delay if not in range 1s..5min
-			if ($tmp>300 || $tmp<1) $this->delay_until=null;
+			$this->delay_until=$this->parseRetryAfterHeader($headers['retry-after'])+time();
 		}
 
 		if (!empty($headers['content-type'])){
@@ -420,6 +412,15 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		);
 
 		return $ret;
+	}
+
+	protected function parseRetryAfterHeader($h){
+		if (is_numeric($h)){
+			return (int)$h;
+		}else{
+			$ts=strtotime($h);
+			return $ts===false?0:max(0,$ts-time());
+		}
 	}
 
 	private function handleError($error){

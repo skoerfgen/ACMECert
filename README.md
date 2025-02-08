@@ -1038,14 +1038,15 @@ public array ACMECert::getARI( mixed $pem )
 ---
 ### ACMECert::getProfiles
 
-Get ACME Profiles
+Get a list of supported profiles. ("profile selection")
 
-See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where a profile can be selected using the `profile` option.
- 
-Example: [Profile Selection](#profile-selection)
 ```php
 public array ACMECert::getProfiles()
 ```
+
+> See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where a profile can be selected using the `profile` option.
+> 
+> Example: [Profile Selection](#profile-selection)
 ###### Return Values
 > Returns an Array with the profile name as key and the description as value.
 >

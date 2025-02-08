@@ -456,10 +456,8 @@ class ACMECert extends ACMEv2 {
 	public function getARI($pem,&$ari_cert_id=null){
 		$ari_cert_id=null;
 
+		$this->requireARI();
 		$id=$this->getARICertID($pem);
-
-		if (!$this->resources) $this->readDirectory();
-		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported by CA');
 
 		$this->log('Requesting ACME Renewal Information');
 		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$id);
@@ -492,6 +490,11 @@ class ACMECert extends ACMEv2 {
 		$out['ari_cert_id']=$id;
 		$ari_cert_id=$id;
 		return $out;
+	}
+
+	private function requireARI(){
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported by CA');
 	}
 
 	private function getARICertID($pem){
@@ -564,6 +567,7 @@ class ACMECert extends ACMEv2 {
 		$this->setRFC3339Date($order,'notBefore',$opts);
 
 		if (isset($opts['replaces'])) { // ARI
+			$this->requireARI();
 			$order['replaces']=$opts['replaces'];
 			$this->log('Replacing Certificate: '.$opts['replaces']);
 		}

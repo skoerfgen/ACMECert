@@ -445,6 +445,14 @@ class ACMECert extends ACMEv2 {
 		return $out;
 	}
 
+	public function getProfiles(){
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['meta']['profiles'])){
+			throw new Exception('Profile selection not supported by CA');
+		}
+		return $this->resources['meta']['profiles'];
+	}
+
 	public function getARI($pem,&$ari_cert_id=null){
 		$ari_cert_id=null;
 
@@ -525,7 +533,7 @@ class ACMECert extends ACMEv2 {
 
 		$diff=array_diff_key(
 			$opts,
-			array_flip(array('authz_reuse','notAfter','notBefore','replaces'))
+			array_flip(array('authz_reuse','notAfter','notBefore','replaces','profile'))
 		);
 
 		if (!empty($diff)){
@@ -558,6 +566,17 @@ class ACMECert extends ACMEv2 {
 		if (isset($opts['replaces'])) { // ARI
 			$order['replaces']=$opts['replaces'];
 			$this->log('Replacing Certificate: '.$opts['replaces']);
+		}
+
+		if (isset($opts['profile'])) { // profile selection
+			$profiles=$this->getProfiles();
+
+			if (!isset($profiles[$opts['profile']])) {
+				throw new Exception('Profile "'.$opts['profile'].'" not supported by CA');
+			}
+
+			$order['profile']=$opts['profile'];
+			$this->log('Using profile: '.$opts['profile']);
 		}
 
 		return $order;

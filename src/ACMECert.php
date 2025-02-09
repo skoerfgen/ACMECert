@@ -447,7 +447,10 @@ class ACMECert extends ACMEv2 {
 
 	public function getProfiles(){
 		if (!$this->resources) $this->readDirectory();
-		if (!isset($this->resources['meta']['profiles'])){
+		if (
+			!isset($this->resources['meta']['profiles']) ||
+			!is_array($this->resources['meta']['profiles']))
+		{
 			throw new Exception('Profile selection not supported by CA');
 		}
 		return $this->resources['meta']['profiles'];
@@ -580,7 +583,7 @@ class ACMECert extends ACMEv2 {
 			}
 
 			$order['profile']=$opts['profile'];
-			$this->log('Using profile: '.$opts['profile']);
+			$this->log('Selected profile: '.$opts['profile']);
 		}
 
 		return $order;

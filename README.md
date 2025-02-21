@@ -22,7 +22,7 @@ It is self contained and contains a set of functions allowing you to:
 - [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates (to renew a certificate just get a new one)
 - [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) or [percentage](#acmecertgetremainingpercent) a certificate is still valid
 - get/use [ACME Renewal Information](#acmecertgetari) (ARI)
-- "profile selection" [getProfiles](#acmecertgetprofiles)
+- get/use [ACME certificate profiles](#acmecertgetprofiles)
 - and more..
 > see [Function Reference](#function-reference) for a full list
 
@@ -354,7 +354,7 @@ if ($days>30) { // renew 30 days before expiry
 // get new certificate here..
 ```
 
-#### Profile Selection
+#### ACME certificate profiles
 ```php
 $ret=$ac->getProfiles();
 print_r($ret); // print available profiles
@@ -747,7 +747,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >>
 >> Use: [getProfiles](#acmecertgetprofiles) to get a list of available profiles.
 >>
->> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
+>> Example: [ACME certificate profiles](#acme-certificate-profiles)
 
 
 
@@ -1038,7 +1038,7 @@ public array ACMECert::getARI( mixed $pem )
 ---
 ### ACMECert::getProfiles
 
-Get a list of supported profiles. ("profile selection")
+Get a list of supported profiles. (ACME certificate profiles)
 
 ```php
 public array ACMECert::getProfiles()
@@ -1046,7 +1046,7 @@ public array ACMECert::getProfiles()
 
 > See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where a profile can be selected using the `profile` option.
 > 
-> Example: [Profile Selection](#profile-selection)
+> Example: [ACME certificate profiles](#acme-certificate-profiles)
 ###### Return Values
 > Returns an Array with the profile name as key and the description as value.
 >

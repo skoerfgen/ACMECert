@@ -741,6 +741,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> Use: [getARI](#acmecertgetari) to get the ARI CertID for a certificate.
 >>
 >> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
+>> 
 >> **`profile`** (string)
 >>
 >> The name of the profile to use.

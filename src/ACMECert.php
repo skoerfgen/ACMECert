@@ -456,6 +456,11 @@ class ACMECert extends ACMEv2 {
 		return $this->resources['meta']['profiles'];
 	}
 
+	private function requireARI(){
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported by CA');
+	}
+
 	public function getARI($pem,&$ari_cert_id=null){
 		$ari_cert_id=null;
 
@@ -493,11 +498,6 @@ class ACMECert extends ACMEv2 {
 		$out['ari_cert_id']=$id;
 		$ari_cert_id=$id;
 		return $out;
-	}
-
-	private function requireARI(){
-		if (!$this->resources) $this->readDirectory();
-		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported by CA');
 	}
 
 	private function getARICertID($pem){

@@ -451,7 +451,7 @@ class ACMECert extends ACMEv2 {
 			!isset($this->resources['meta']['profiles']) ||
 			!is_array($this->resources['meta']['profiles']))
 		{
-			throw new Exception('Profile selection not supported by CA');
+			throw new Exception('certificate profiles not supported by CA');
 		}
 		return $this->resources['meta']['profiles'];
 	}
@@ -575,15 +575,15 @@ class ACMECert extends ACMEv2 {
 			$this->log('Replacing Certificate: '.$opts['replaces']);
 		}
 
-		if (isset($opts['profile'])) { // profile selection
+		if (isset($opts['profile'])) { // certificate profiles
 			$profiles=$this->getProfiles();
 
 			if (!isset($profiles[$opts['profile']])) {
-				throw new Exception('Profile "'.$opts['profile'].'" not supported by CA');
+				throw new Exception('certificate profile "'.$opts['profile'].'" not supported by CA');
 			}
 
 			$order['profile']=$opts['profile'];
-			$this->log('Selected profile: '.$opts['profile']);
+			$this->log('Selected certificate profile: '.$opts['profile']);
 		}
 
 		return $order;

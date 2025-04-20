@@ -445,13 +445,27 @@ class ACMECert extends ACMEv2 {
 		return $out;
 	}
 
+	public function getProfiles(){
+		if (!$this->resources) $this->readDirectory();
+		if (
+			!isset($this->resources['meta']['profiles']) ||
+			!is_array($this->resources['meta']['profiles']))
+		{
+			throw new Exception('certificate profiles not supported by CA');
+		}
+		return $this->resources['meta']['profiles'];
+	}
+
+	private function requireARI(){
+		if (!$this->resources) $this->readDirectory();
+		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported by CA');
+	}
+
 	public function getARI($pem,&$ari_cert_id=null){
 		$ari_cert_id=null;
 
 		$id=$this->getARICertID($pem);
-
-		if (!$this->resources) $this->readDirectory();
-		if (!isset($this->resources['renewalInfo'])) throw new Exception('ARI not supported by CA');
+		$this->requireARI();
 
 		$this->log('Requesting ACME Renewal Information');
 		$ret=$this->http_request($this->resources['renewalInfo'].'/'.$id);
@@ -525,7 +539,7 @@ class ACMECert extends ACMEv2 {
 
 		$diff=array_diff_key(
 			$opts,
-			array_flip(array('authz_reuse','notAfter','notBefore','replaces'))
+			array_flip(array('authz_reuse','notAfter','notBefore','replaces','profile'))
 		);
 
 		if (!empty($diff)){
@@ -556,8 +570,20 @@ class ACMECert extends ACMEv2 {
 		$this->setRFC3339Date($order,'notBefore',$opts);
 
 		if (isset($opts['replaces'])) { // ARI
+			$this->requireARI();
 			$order['replaces']=$opts['replaces'];
 			$this->log('Replacing Certificate: '.$opts['replaces']);
+		}
+
+		if (isset($opts['profile'])) { // certificate profiles
+			$profiles=$this->getProfiles();
+
+			if (!isset($profiles[$opts['profile']])) {
+				throw new Exception('certificate profile "'.$opts['profile'].'" not supported by CA');
+			}
+
+			$order['profile']=$opts['profile'];
+			$this->log('Selected certificate profile: '.$opts['profile']);
 		}
 
 		return $order;

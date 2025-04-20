@@ -1,4 +1,4 @@
-# ACMECert v3.5.0
+# ACMECert v3.6.0
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
 
@@ -22,6 +22,7 @@ It is self contained and contains a set of functions allowing you to:
 - [get](#acmecertgetcertificatechain)/[revoke](#acmecertrevoke) certificates (to renew a certificate just get a new one)
 - [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) or [percentage](#acmecertgetremainingpercent) a certificate is still valid
 - get/use [ACME Renewal Information](#acmecertgetari) (ARI)
+- get/use [ACME certificate profiles](#acmecertgetprofiles)
 - and more..
 > see [Function Reference](#function-reference) for a full list
 
@@ -351,6 +352,18 @@ if ($days>30) { // renew 30 days before expiry
   die('Certificate still good, exiting..');
 }
 // get new certificate here..
+```
+
+#### ACME certificate profiles
+```php
+$ret=$ac->getProfiles();
+print_r($ret); // print available profiles
+
+// use profile with name "classic"
+$settings=array(
+  'profile'=>'classic'
+);
+$ac->getCertificateChain(..., ..., ..., $settings);
 ```
 
 ## Logging
@@ -728,6 +741,15 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> Use: [getARI](#acmecertgetari) to get the ARI CertID for a certificate.
 >>
 >> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
+>> 
+>> **`profile`** (string)
+>>
+>> The name of the profile to use.
+>>
+>> Use: [getProfiles](#acmecertgetprofiles) to get a list of available profiles.
+>>
+>> Example: [ACME certificate profiles](#acme-certificate-profiles)
+
 
 
 ###### Return Values
@@ -1002,7 +1024,7 @@ public array ACMECert::getARI( mixed $pem )
 >>
 >> The ARI CertID of the given certificate.
 >> 
->> See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where the ARI CertID can be used to replace an existing certificate.
+>> See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where the ARI CertID can be used to replace an existing certificate using the `replaces` option.
 >> 
 >> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
 >>
@@ -1013,6 +1035,32 @@ public array ACMECert::getARI( mixed $pem )
 >> Clients SHOULD set reasonable limits on their checking interval. For example, values under one minute could be treated as if they were one minute, and values over one day could be treated as if they were one day.
 ###### Errors/Exceptions
 > Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the ACME Renewal Information.
+
+---
+### ACMECert::getProfiles
+
+Get a list of supported profiles. (ACME certificate profiles)
+
+```php
+public array ACMECert::getProfiles()
+```
+
+> See the documentation of [getCertificateChain](#acmecertgetcertificatechain) where a profile can be selected using the `profile` option.
+> 
+> Example: [ACME certificate profiles](#acme-certificate-profiles)
+###### Return Values
+> Returns an Array with the profile name as key and the description as value.
+>
+> Example:
+> ```php
+> Array
+> (
+>     [classic] => The same profile you're accustomed to
+>     [tlsserver] => https://letsencrypt.org/2025/01/09/acme-profiles/
+> )
+> ```
+###### Errors/Exceptions
+> Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the profiles.
 
 ---
 

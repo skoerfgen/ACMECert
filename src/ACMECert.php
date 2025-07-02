@@ -335,7 +335,7 @@ class ACMECert extends ACMEv2 {
 		$fn=$this->tmp_ssl_cnf($domains);
 		$cn=reset($domains);
 		$dn=array();
-		if (strlen($cn)<=64){
+		if (!filter_var($cn,FILTER_VALIDATE_IP) && strlen($cn)<=64){
 			$dn['commonName']=$cn;
 		}
 		$csr=openssl_csr_new($dn,$domain_key,array(
@@ -561,7 +561,11 @@ class ACMECert extends ACMEv2 {
 		$order=array(
 			'identifiers'=>array_map(
 				function($domain){
-					return array('type'=>'dns','value'=>$domain);
+					if (filter_var($domain,FILTER_VALIDATE_IP)){
+						return array('type'=>'ip','value'=>$domain);
+					}else{
+						return array('type'=>'dns','value'=>$domain);
+					}
 				},
 				$domains
 			)
@@ -681,7 +685,12 @@ class ACMECert extends ACMEv2 {
 				'[SAN]'."\n".
 				'subjectAltName='.
 				implode(',',array_map(function($domain){
-					return 'DNS:'.$domain;
+					if (filter_var($domain,FILTER_VALIDATE_IP)){
+						return 'IP:'.$domain;
+					}else{
+						return 'DNS:'.$domain;
+					}
+
 				},$domains))."\n"
 			:
 				''

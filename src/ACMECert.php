@@ -205,7 +205,7 @@ class ACMECert extends ACMEv2 {
 				$groups[
 					$domain_config[$domain]['challenge'].
 					'|'.
-					ltrim($domain,'*.')
+					(($settings['group'])?ltrim($domain,'*.'):$domain)
 				][$domain]=array($auth_url,$authorization);
 			}
 
@@ -536,10 +536,11 @@ class ACMECert extends ACMEv2 {
 		// authz_reuse: backwards compatibility to ACMECert v3.1.2 or older
 		if (!is_array($opts)) $opts=array('authz_reuse'=>(bool)$opts);
 		if (!isset($opts['authz_reuse'])) $opts['authz_reuse']=true;
+		if (!isset($opts['group'])) $opts['group']=true;
 
 		$diff=array_diff_key(
 			$opts,
-			array_flip(array('authz_reuse','notAfter','notBefore','replaces','profile'))
+			array_flip(array('authz_reuse','notAfter','notBefore','replaces','profile','group'))
 		);
 
 		if (!empty($diff)){

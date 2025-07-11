@@ -734,7 +734,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> ```php
 >> array( 'notAfter' => '1970-01-01T01:22:17+01:00' )
 >> ```
->>
+>
 >> **`replaces`** (string)
 >>
 >> The ARI CertID uniquely identifying a previously-issued certificate which this order is intended to replace.
@@ -742,7 +742,7 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> Use: [getARI](#acmecertgetari) to get the ARI CertID for a certificate.
 >>
 >> Example: [Get/Use ACME Renewal Information](#getuse-acme-renewal-information)
->> 
+>
 >> **`profile`** (string)
 >>
 >> The name of the profile to use.
@@ -750,6 +750,18 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> Use: [getProfiles](#acmecertgetprofiles) to get a list of available profiles.
 >>
 >> Example: [ACME certificate profiles](#acme-certificate-profiles)
+>
+>> **`group`** (boolean / default: `TRUE`)
+>>
+>> When issuing certificates using the `dns-01` challenge for multiple domains that share the same `_acme-challenge` subdomain, such as:
+>> - example.com
+>> - *.example.com (wildcard)
+>>
+>> two distinct TXT records must be created under the same DNS name `_acme-challenge.example.com`
+>>
+>> By default, ACMECert groups these challenges together. This means all required TXT records for `_acme-challenge.example.com` are set simultaneously, and validation is triggered only after all records are in place. This approach prevents validation failures due to DNS caching delays.
+>>
+>> If set to `FALSE` challenges are handled independently. Each TXT record gets set and validated one at a time.
 
 
 

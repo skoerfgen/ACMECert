@@ -23,6 +23,7 @@ It is self contained and contains a set of functions allowing you to:
 - [parse certificates](#acmecertparsecertificate) / get the [remaining days](#acmecertgetremainingdays) or [percentage](#acmecertgetremainingpercent) a certificate is still valid
 - get/use [ACME Renewal Information](#acmecertgetari) (ARI)
 - get/use [ACME certificate profiles](#acmecertgetprofiles)
+- issue IP address certificates
 - and more..
 > see [Function Reference](#function-reference) for a full list
 

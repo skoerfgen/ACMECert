@@ -269,6 +269,7 @@ $handler=function($opts) use ($ac){
         // Stop ALPN Responder
         fclose($pipes[0]);
         fclose($pipes[1]);
+        proc_terminate($resource);
         proc_close($resource);
         shell_exec('/etc/init.d/apache2 start');
       };

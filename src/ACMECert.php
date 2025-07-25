@@ -404,8 +404,8 @@ class ACMECert extends ACMEv2 {
 		}
 		$out=array();
 		foreach(explode(',',$ret['extensions']['subjectAltName']) as $line){
-			list($type,$name)=array_map('trim',explode(':',$line));
-			if ($type==='DNS'){
+			list($type,$name)=array_map('trim',explode(':',$line,2));
+			if ($type==='DNS' || $type==='IP Address'){
 				$out[]=$name;
 			}
 		}

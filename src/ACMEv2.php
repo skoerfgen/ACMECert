@@ -308,7 +308,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
-		$user_agent='ACMECert v3.7.0 (+https://github.com/skoerfgen/ACMECert)';
+		$user_agent='ACMECert v3.7.1 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
 		if ($this->ch) {
 			$headers=array();

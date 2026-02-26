@@ -616,6 +616,24 @@ class ACMECert extends ACMEv2 {
 				case 'tls-alpn-01':
 					return array(null,hash('sha256',$this->keyAuthorization($challenge['token'])));
 				break;
+				case 'dns-persist-01':
+					$arr=array();
+					$arr[]=reset($challenge['issuer-domain-names']);
+					$arr[]='accounturi='.$this->getAccountID();
+					if (isset($authorization['wildcard']) && $authorization['wildcard']===true){
+						$arr[]='policy=wildcard';
+					}
+					return array(
+						'_validation-persist.'.$authorization['identifier']['value'],
+						implode('; ',$arr)
+					);
+				break;
+				case 'dns-account-01':
+					return array(
+						'_'.$this->base32_encode(substr(hash('sha256',$this->getAccountID(),true),0,10)).'._acme-challenge.'.$authorization['identifier']['value'],
+						$this->base64url(hash('sha256',$this->keyAuthorization($challenge['token']),true))
+					);
+				break;
 			}
 		}
 		throw new Exception(

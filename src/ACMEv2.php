@@ -278,6 +278,24 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return base64_decode(strtr($data,'-_','+/'));
 	}
 
+	protected function base32_encode($data){
+		if ($data==='') return '';
+		$alphabet='abcdefghijklmnopqrstuvwxyz234567';
+		$binary='';
+		foreach (str_split($data) as $char){
+			$binary.=str_pad(decbin(ord($char)),8,'0',STR_PAD_LEFT);
+		}
+		$chunks=str_split($binary, 5);
+		$encoded='';
+		foreach ($chunks as $chunk){
+			if (strlen($chunk)<5) {
+				$chunk=str_pad($chunk,5,'0',STR_PAD_RIGHT);
+			}
+			$encoded.=$alphabet[bindec($chunk)];
+		}
+		return str_pad($encoded,ceil(strlen($encoded)/8)*8,'=',STR_PAD_RIGHT);
+	}
+
 	private function json_decode($str){
 		$ret=json_decode($str,true);
 		if ($ret===null) {

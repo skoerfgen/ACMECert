@@ -669,9 +669,8 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >   'test.example.net'=>array('challenge'=>'http-01','docroot'=>'/var/www/vhosts/test1.example.com'),
 > );
 > ```
-> > Hint: Wildcard certificates (`*.example.com`) are only supported with the `dns-01` challenge type.
 >
-> `challenge` is mandatory and has to be one of `http-01`, `dns-01` or `tls-alpn-01`.
+> `challenge` is mandatory and has to be one of `http-01`, `dns-01`, `tls-alpn-01`, `dns-account-01` or `dns-persist-01`.
 > All other keys are optional and up to you to be used and are later available in the callback function as `$opts['config']`
 > (see the [http-01 example](#get-certificate-using-http-01-challenge) where `docroot` is used this way)
 
@@ -707,9 +706,9 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >>
 >> Challenge Type | `$opts['key']` | `$opts['value']`
 >> --- | --- | ---
->> http-01 | path + filename | file contents
->> dns-01 | TXT Resource Record Name | TXT Resource Record Value
->> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
+>> `http-01` | path + filename | file contents
+>> `dns-01`<br>`dns-persist-01`<br>`dns-account-01` | TXT Resource Record Name | TXT Resource Record Value
+>> `tls-alpn-01` | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
 
 
 > **`settings`** (optional)
@@ -763,6 +762,8 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >> By default, ACMECert groups these challenges together. This means all required TXT records for `_acme-challenge.example.com` are set simultaneously, and validation is triggered only after all records are in place. This approach prevents validation failures due to DNS caching delays.
 >>
 >> If set to `FALSE` challenges are handled independently. Each TXT record gets set and validated one at a time.
+>>
+>> The above is also true for the `dns-account-01` and `dns-persist-01` challenge types.
 
 
 

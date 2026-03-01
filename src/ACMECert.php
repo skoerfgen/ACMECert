@@ -625,10 +625,11 @@ class ACMECert extends ACMEv2 {
 					return array(null,hash('sha256',$this->keyAuthorization($challenge['token'])));
 				break;
 				case 'dns-persist-01':
-					$arr=array();
-					$arr[]=reset($challenge['issuer-domain-names']);
-					$arr[]='accounturi='.$this->getAccountID();
-					if (isset($authorization['wildcard']) && $authorization['wildcard']===true){
+					$arr=array(
+						reset($challenge['issuer-domain-names']),
+						'accounturi='.$this->getAccountID()
+					);
+					if (isset($authorization['wildcard']) && $authorization['wildcard']){
 						$arr[]='policy=wildcard';
 					}
 					return array(

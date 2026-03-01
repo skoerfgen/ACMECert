@@ -30,7 +30,7 @@ It is self contained and contains a set of functions allowing you to:
 It abstracts away the complexity of the ACME protocol to get a certificate
 (create order, fetch authorizations, compute challenge tokens, polling for status, generate CSR,
 finalize order, request certificate) into a single function [getCertificateChain](#acmecertgetcertificatechain) (or [getCertificateChains](#acmecertgetcertificatechains) to also get all alternate chains),
-where you specify a set of domains you want to get a certificate for and which challenge type to use (all [challenge types](https://letsencrypt.org/docs/challenge-types/) are supported).
+where you specify a set of domains you want to get a certificate for and which challenge type to use (Supported challenge types: `http-01`, `dns-01`, `tls-alpn-01`, `dns-account-01`, `dns-persist-01`).
 This function takes as third argument a user-defined callback function which gets
 invoked every time a challenge needs to be fulfilled. It is up to you to set/remove the challenge tokens:
 

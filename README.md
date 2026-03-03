@@ -377,7 +377,7 @@ ini_set('log_errors',1);
 ini_set('error_log',dirname(__FILE__).'/ACMECert.log');
 ```
 
-> To disable the default logging, you can use [`setLogger`](#acmecertsetlog), Exceptions are nevertheless thrown:
+> To disable the default logging, you can use [`setLogger`](#acmecertsetlogger), Exceptions are nevertheless thrown:
 ```php
 $ac->setLogger(false);
 ```

@@ -348,7 +348,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			$took=microtime(true);
 			$body=curl_exec($this->ch);
 			$took=round(microtime(true)-$took,2).'s';
-			if ($body===false) throw new Exception('HTTP Request Error: '.curl_error($this->ch));
+			if ($body===false) throw new Exception('HTTP Request Error: ['.$url.'] '.curl_error($this->ch).' ('.curl_errno($this->ch).')');
 		}else{
 			$opts=array(
 				'http'=>array(

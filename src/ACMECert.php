@@ -237,11 +237,9 @@ class ACMECert extends ACMEv2 {
 						list($opts['key'],$opts['value'])=$challenge;
 
 						// prevent triggering the challenge callback for domain names already covered by wildcard
-						if ($type==='dns-persist-01' && count($group)>1){
-							if ($domain[0]!=='*'){
-								$pending_challenges[]=array(null,$opts,$challenge_url,$auth_url);
-								continue;
-							}
+						if ($type==='dns-persist-01' && isset($domain_config['*.'.$domain]) && $domain[0]!=='*'){
+							$pending_challenges[]=array(null,$opts,$challenge_url,$auth_url);
+							continue;
 						}
 
 						$this->log('Triggering challenge callback for '.$domain.' using '.$type);

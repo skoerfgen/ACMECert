@@ -753,17 +753,17 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >
 >> **`group`** (boolean / default: `TRUE`)
 >>
->> When issuing certificates using the `dns-01` challenge for multiple domains that share the same `_acme-challenge` subdomain, such as:
+>> When issuing certificates using the `dns-01` (or `dns-account-01`, `dns-persist-01`) challenge for multiple domains that share the same `_acme-challenge` subdomain, such as:
 >> - example.com
 >> - *.example.com (wildcard)
 >>
 >> two distinct TXT records must be created under the same DNS name `_acme-challenge.example.com`
 >>
->> By default, ACMECert groups these challenges together. This means all required TXT records for `_acme-challenge.example.com` are set simultaneously, and validation is triggered only after all records are in place. This approach prevents validation failures due to DNS caching delays.
+>> By default, ACMECert groups these challenges together. This means the challenge callback for `_acme-challenge.example.com` is triggered twice (once for each domain), then the validation is triggered. Then the remove callback is triggered twice. This approach prevents validation failures due to DNS caching delays.
 >>
->> If set to `FALSE` challenges are handled independently. Each TXT record gets set and validated one at a time.
+>> If set to `FALSE` challenges are handled independently. Each challenge callback is directly followed by the validation.
 >>
->> The above is also true for the `dns-account-01` and `dns-persist-01` challenge types.
+>> For the `dns-persist-01` challenge type grouping is always enabled, because the DNS record of the wildcard `*.example.com` also is valid for `example.com`. In this case the challenge callback is triggered once, then both domains are validated.
 
 
 

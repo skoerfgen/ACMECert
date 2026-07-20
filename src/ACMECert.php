@@ -205,7 +205,7 @@ class ACMECert extends ACMEv2 {
 				$groups[
 					$domain_config[$domain]['challenge'].
 					'|'.
-					(($settings['group'])?ltrim($domain,'*.'):$domain)
+					(($settings['group'] || $domain_config[$domain]['challenge']==='dns-persist-01')?ltrim($domain,'*.'):$domain)
 				][$domain]=array($auth_url,$authorization);
 			}
 
@@ -235,6 +235,12 @@ class ACMECert extends ACMEv2 {
 							'config'=>$config
 						);
 						list($opts['key'],$opts['value'])=$challenge;
+
+						// prevent triggering the challenge callback for domain names already covered by wildcard
+						if ($type==='dns-persist-01' && isset($domain_config['*.'.$domain]) && $domain[0]!=='*'){
+							$pending_challenges[]=array(null,$opts,$challenge_url,$auth_url);
+							continue;
+						}
 
 						$this->log('Triggering challenge callback for '.$domain.' using '.$type);
 						$remove_cb=$callback($opts);
@@ -621,6 +627,28 @@ class ACMECert extends ACMEv2 {
 				break;
 				case 'tls-alpn-01':
 					return array(null,hash('sha256',$this->keyAuthorization($challenge['token'])));
+				break;
+				case 'dns-persist-01':
+					$arr=array(
+						reset($challenge['issuer-domain-names']),
+						'accounturi='.$this->getAccountID()
+					);
+					if (isset($authorization['wildcard']) && $authorization['wildcard']){
+						$arr[]='policy=wildcard';
+					}
+					return array(
+						'_validation-persist.'.$authorization['identifier']['value'],
+						implode('; ',$arr)
+					);
+				break;
+				case 'dns-account-01':
+					return array(
+						'_'.$this->base32_encode(substr(hash('sha256',$this->getAccountID(),true),0,10)).'._acme-challenge.'.$authorization['identifier']['value'],
+						$this->base64url(hash('sha256',$this->keyAuthorization($challenge['token']),true))
+					);
+				break;
+				default:
+					throw new Exception('Challenge type: "'.$type.'" not yet supported by ACMECert, feel free to open a new issue: https://github.com/skoerfgen/ACMECert/issues');
 				break;
 			}
 		}

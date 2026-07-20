@@ -1,4 +1,4 @@
-# ACMECert v3.7.2
+# ACMECert v3.8.0
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
 
@@ -30,7 +30,7 @@ It is self contained and contains a set of functions allowing you to:
 It abstracts away the complexity of the ACME protocol to get a certificate
 (create order, fetch authorizations, compute challenge tokens, polling for status, generate CSR,
 finalize order, request certificate) into a single function [getCertificateChain](#acmecertgetcertificatechain) (or [getCertificateChains](#acmecertgetcertificatechains) to also get all alternate chains),
-where you specify a set of domains you want to get a certificate for and which challenge type to use (all [challenge types](https://letsencrypt.org/docs/challenge-types/) are supported).
+where you specify a set of domains you want to get a certificate for and which challenge type to use (Supported challenge types: `http-01`, `dns-01`, `tls-alpn-01`, `dns-account-01`, `dns-persist-01`).
 This function takes as third argument a user-defined callback function which gets
 invoked every time a challenge needs to be fulfilled. It is up to you to set/remove the challenge tokens:
 
@@ -377,7 +377,7 @@ ini_set('log_errors',1);
 ini_set('error_log',dirname(__FILE__).'/ACMECert.log');
 ```
 
-> To disable the default logging, you can use [`setLogger`](#acmecertsetlog), Exceptions are nevertheless thrown:
+> To disable the default logging, you can use [`setLogger`](#acmecertsetlogger), Exceptions are nevertheless thrown:
 ```php
 $ac->setLogger(false);
 ```
@@ -669,9 +669,8 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >   'test.example.net'=>array('challenge'=>'http-01','docroot'=>'/var/www/vhosts/test1.example.com'),
 > );
 > ```
-> > Hint: Wildcard certificates (`*.example.com`) are only supported with the `dns-01` challenge type.
 >
-> `challenge` is mandatory and has to be one of `http-01`, `dns-01` or `tls-alpn-01`.
+> `challenge` is mandatory and has to be one of `http-01`, `dns-01`, `tls-alpn-01`, `dns-account-01` or `dns-persist-01`.
 > All other keys are optional and up to you to be used and are later available in the callback function as `$opts['config']`
 > (see the [http-01 example](#get-certificate-using-http-01-challenge) where `docroot` is used this way)
 
@@ -707,9 +706,9 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >>
 >> Challenge Type | `$opts['key']` | `$opts['value']`
 >> --- | --- | ---
->> http-01 | path + filename | file contents
->> dns-01 | TXT Resource Record Name | TXT Resource Record Value
->> tls-alpn-01 | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
+>> `http-01` | path + filename | file contents
+>> `dns-01`<br>`dns-persist-01`<br>`dns-account-01` | TXT Resource Record Name | TXT Resource Record Value
+>> `tls-alpn-01` | unused | token used in the acmeIdentifier extension of the verification certificate; use [generateALPNCertificate](#acmecertgeneratealpncertificate) to generate the verification certificate from that token. (see the [tls-alpn-01 example](#get-certificate-using-all-http-01dns-01-and-tls-alpn-01-challenge-types-together))
 
 
 > **`settings`** (optional)
@@ -754,15 +753,17 @@ public string ACMECert::getCertificateChain ( mixed $pem, array $domain_config, 
 >
 >> **`group`** (boolean / default: `TRUE`)
 >>
->> When issuing certificates using the `dns-01` challenge for multiple domains that share the same `_acme-challenge` subdomain, such as:
+>> When issuing certificates using the `dns-01` (or `dns-account-01`, `dns-persist-01`) challenge for multiple domains that share the same `_acme-challenge` subdomain, such as:
 >> - example.com
 >> - *.example.com (wildcard)
 >>
 >> two distinct TXT records must be created under the same DNS name `_acme-challenge.example.com`
 >>
->> By default, ACMECert groups these challenges together. This means all required TXT records for `_acme-challenge.example.com` are set simultaneously, and validation is triggered only after all records are in place. This approach prevents validation failures due to DNS caching delays.
+>> By default, ACMECert groups these challenges together. This means the challenge callback for `_acme-challenge.example.com` is triggered twice (once for each domain), then the validation is triggered. Then the remove callback is triggered twice. This approach prevents validation failures due to DNS caching delays.
 >>
->> If set to `FALSE` challenges are handled independently. Each TXT record gets set and validated one at a time.
+>> If set to `FALSE` challenges are handled independently. Each challenge callback is directly followed by the validation.
+>>
+>> For the `dns-persist-01` challenge type grouping is always enabled, because the DNS record of the wildcard `*.example.com` also is valid for `example.com`. In this case the challenge callback is triggered once, then both domains are validated.
 
 
 

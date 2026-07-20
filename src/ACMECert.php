@@ -281,6 +281,12 @@ class ACMECert extends ACMEv2 {
 			}
 		}
 
+		$this->log('Checking order status');
+		if (!$this->poll('pending',$order_location,$order,'ready')){
+			throw new Exception('Order did not reach "ready" status');
+		}
+		$this->log('Order is ready for finalization');
+
 		// autodetect if Private Key or CSR is used
 		if ($key=openssl_pkey_get_private($pem)){ // Private Key detected
 			if (PHP_MAJOR_VERSION<8) openssl_free_key($key);
@@ -657,12 +663,12 @@ class ACMECert extends ACMEv2 {
 		);
 	}
 
-	private function poll($initial,$type,&$ret){
+	private function poll($initial,$type,&$ret,$success='valid'){
 		$max_tries=10; // ~ 5 minutes
 		for($i=0;$i<$max_tries;$i++){
 			$ret=$this->request($type);
 			$ret=$ret['body'];
-			if ($ret['status']!==$initial) return $ret['status']==='valid';
+			if ($ret['status']!==$initial) return $ret['status']===$success;
 			$s=pow(2,min($i,6));
 			if ($i!==$max_tries-1){
 				$this->log('Retrying in '.($s).'s');

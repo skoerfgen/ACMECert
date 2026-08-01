@@ -631,7 +631,17 @@ class ACMECert extends ACMEv2 {
 				case 'dns-persist-01':
 					$arr=array(
 						reset($challenge['issuer-domain-names']),
-						'accounturi='.$this->getAccountID()
+						'accounturi='.$this->resources['accountHashPrefix'].'sha-256/'.
+						$this->base64url(
+							hash(
+								'sha256',
+								chr(strlen($authorization['identifier']['value'])).
+								$authorization['identifier']['value'].
+								$this->thumbprint.
+								$this->getAccountID(),
+								true
+							)
+						)
 					);
 					if (isset($authorization['wildcard']) && $authorization['wildcard']){
 						$arr[]='policy=wildcard';

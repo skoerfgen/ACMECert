@@ -606,6 +606,20 @@ class ACMECert extends ACMEv2 {
 		return $order;
 	}
 
+	function getDNSPersistRecord($domain){
+		return $this->resources['accountHashPrefix'].'sha-256/'.
+			$this->base64url(
+				hash(
+					'sha256',
+					chr(strlen($domain)).
+					$domain.
+					$this->thumbprint.
+					$this->getAccountID(),
+					true
+				)
+			);
+	}
+
 	private function parse_challenges($authorization,$type,&$url){
 		foreach($authorization['challenges'] as $challenge){
 			if ($challenge['type']!=$type) continue;
@@ -631,17 +645,7 @@ class ACMECert extends ACMEv2 {
 				case 'dns-persist-01':
 					$arr=array(
 						reset($challenge['issuer-domain-names']),
-						'accounturi='.$this->resources['accountHashPrefix'].'sha-256/'.
-						$this->base64url(
-							hash(
-								'sha256',
-								chr(strlen($authorization['identifier']['value'])).
-								$authorization['identifier']['value'].
-								$this->thumbprint.
-								$this->getAccountID(),
-								true
-							)
-						)
+						'accounturi='.$this->getDNSPersistRecord($authorization['identifier']['value'])
 					);
 					if (isset($authorization['wildcard']) && $authorization['wildcard']){
 						$arr[]='policy=wildcard';

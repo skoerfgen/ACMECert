@@ -1,4 +1,4 @@
-# ACMECert v3.7.2
+# ACMECert v3.7.3
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
 

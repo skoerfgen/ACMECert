@@ -48,8 +48,10 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	}
 
 	public function __destruct(){
-		if (PHP_MAJOR_VERSION<8 && $this->account_key) openssl_pkey_free($this->account_key);
-		if ($this->ch) curl_close($this->ch);
+		if (PHP_MAJOR_VERSION<8){
+			if ($this->account_key) openssl_pkey_free($this->account_key);
+			if ($this->ch) curl_close($this->ch);
+		}
 	}
 
 	public function loadAccountKey($account_key_pem){
@@ -346,6 +348,9 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			$body=file_get_contents($url,false,stream_context_create($opts));
 			$took=round(microtime(true)-$took,2).'s';
 			if ($body===false) throw new Exception('HTTP Request Error: '.$this->get_openssl_error());
+			if (PHP_VERSION_ID>=80400){
+				$http_response_header=http_get_last_response_headers();
+			}
 			$headers=$http_response_header;
 		}
 

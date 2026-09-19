@@ -60,7 +60,7 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server responded
 
 ## Require ACMECert
 
-manual download: https://github.com/skoerfgen/ACMECert/archive/master.zip
+manual download: [https://github.com/skoerfgen/ACMECert/releases/latest](https://github.com/skoerfgen/ACMECert/releases/latest)
 
 usage:
 

@@ -1,0 +1,103 @@
+name: ACMECert Test
+
+on:
+  #workflow_dispatch:
+  push:
+ 
+permissions:
+  contents: read
+
+env:
+  PEBBLE_VERSION: "2.10.1"
+
+jobs:
+  test-required:
+    name: All ACMECert Tests
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check test matrix
+        if: ${{ needs.test.result != 'success' }}
+        run: exit 1
+
+      - run: echo "All tests passed"
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['5.6','7.0','7.4','8.0','8.5']
+        connect: ['(cURL)','(fopen)']
+    runs-on: ubuntu-latest
+    name: PHP ${{ matrix.version }} ${{ matrix.connect }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        
+      - name: Replace port 443 with 5001 in alpn_responder.js
+        run: sed -i 's/listen(443)/listen(5001)/g' alpn_responder.js
+        
+      - name: Disable cURL
+        if: ${{ matrix.connect != '(cURL)' }}
+        run: sed -i "s/extension_loaded('curl')/false/g" src/ACMEv2.php
+        
+      - name: Fix Pebble Bug ( https://github.com/letsencrypt/pebble/issues/550 )
+        run: sed -i 's/\$ser="\\x00"/$ser=""/g' src/ACMECert.php
+        
+      - name: Run Pebble
+        run: |
+          docker run --name pebble --network=host --rm -d -v "$GITHUB_WORKSPACE/test/pebble/pebble-config-no-eab.json:/test/config/pebble-config.json:ro" -e PEBBLE_AUTHZREUSE=100 -e PEBBLE_VA_NOSLEEP=0 -e PEBBLE_WFE_NONCEREJECT=0 ghcr.io/letsencrypt/pebble:${{ env.PEBBLE_VERSION }} -strict -dnsserver 127.0.0.1:8053         
+          docker run --name eab    --network=host --rm -d -v "$GITHUB_WORKSPACE/test/pebble/pebble-config-eab.json:/test/config/pebble-config.json:ro"    -e PEBBLE_AUTHZREUSE=100 -e PEBBLE_VA_NOSLEEP=0 -e PEBBLE_WFE_NONCEREJECT=0 ghcr.io/letsencrypt/pebble:${{ env.PEBBLE_VERSION }} -strict -dnsserver 127.0.0.1:8053         
+          
+      - name: Run challtestsrv
+        run: docker run --name=challtestsrv --network=host --rm -d ghcr.io/letsencrypt/pebble-challtestsrv:${{ env.PEBBLE_VERSION }} -defaultIPv6 "" -defaultIPv4 "127.0.0.1" -tlsalpn01 ""
+      
+      - name: Copy Pebble CA Cert into Workspace
+        run: docker cp pebble:/test/certs/pebble.minica.pem pebble.crt
+      
+      - name: Pull php:${{ matrix.version }}-cli-alpine
+        run: docker pull php:${{ matrix.version }}-cli-alpine
+        
+      - name: Init PHP ${{ matrix.version }} + NodeJS
+        run: |
+          docker run -d --name php --network=host \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            php:${{ matrix.version }}-cli-alpine \
+            tail -f /dev/null
+
+          docker exec php apk add --no-cache nodejs
+          
+      - name: Wait for Pebble and challtestsrv to be ready
+        run: |
+          timeout 30s sh -c 'until curl -sk https://127.0.0.1:14000/dir >/dev/null; do sleep 1; done'
+          timeout 30s sh -c 'until curl -s http://127.0.0.1:8055/ >/dev/null; do sleep 1; done'
+          
+      - name: Run ACMECert Tests on PHP ${{ matrix.version }} ${{ matrix.connect }}
+        run: |
+          docker exec php \
+            php -d curl.cainfo=pebble.crt \
+                -d openssl.cafile=pebble.crt \
+                test/test.php
+                
+      - name: Pebble log
+        run: |
+          docker logs pebble
+          
+      - name: Pebble EAB log
+        run: |
+          docker logs eab
+          
+      - name: challtestsrv log
+        run: |
+          docker logs challtestsrv
+
+      - name: PHP log
+        run: |
+          docker logs php
+        
+      - name: Stop containers
+        run: docker rm -f php pebble eab challtestsrv
+          
+     

@@ -1,4 +1,6 @@
 # ACMECert v3.8.0
+[![ACMECert Test](https://github.com/skoerfgen/ACMECert/actions/workflows/ACMECert.yaml/badge.svg)](https://github.com/skoerfgen/ACMECert/actions/workflows/ACMECert.yaml)
+[![CodeQL](https://github.com/skoerfgen/ACMECert/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/skoerfgen/ACMECert/actions/workflows/github-code-scanning/codeql)
 
 PHP client library for [Let's Encrypt](https://letsencrypt.org/) and other [ACME v2 - RFC 8555](https://tools.ietf.org/html/rfc8555) compatible Certificate Authorities.  
 
@@ -60,7 +62,7 @@ if it fails or an [ACME_Exception](#acme_exception) if the ACME-Server responded
 
 ## Require ACMECert
 
-manual download: https://github.com/skoerfgen/ACMECert/archive/master.zip
+manual download: [https://github.com/skoerfgen/ACMECert/releases/latest](https://github.com/skoerfgen/ACMECert/releases/latest)
 
 usage:
 

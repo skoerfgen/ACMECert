@@ -12,7 +12,7 @@ if (isset($argv[1]) && $argv[1]==='(psr18)') $ac->setHTTPHandler(new \GuzzleHttp
 $ac->setLogger(function($txt){ echo $txt,"\n"; });
 
 $ac_eab=new ACMECert('https://127.0.0.1:14001/dir');
-if (isset($argv[1]) && $argv[1]==='(psr18)') $ac->setHTTPHandler(new \GuzzleHttp\Client(),new \GuzzleHttp\Psr7\HttpFactory());
+if (isset($argv[1]) && $argv[1]==='(psr18)') $ac_eab->setHTTPHandler(new \GuzzleHttp\Client(),new \GuzzleHttp\Psr7\HttpFactory());
 $ac_eab->setLogger(function($txt){ echo $txt,"\n"; });
 
 $keys=array(

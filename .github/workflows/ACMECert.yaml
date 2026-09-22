@@ -89,7 +89,7 @@ jobs:
           docker exec php \
             php -d curl.cainfo=pebble.crt \
                 -d openssl.cafile=pebble.crt \
-                test/test.php ${{ matrix.connect }}
+                test/test.php "${{ matrix.connect }}"
                 
       - name: Pebble log
         run: |

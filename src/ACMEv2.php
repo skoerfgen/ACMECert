@@ -37,7 +37,9 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$directories=array(
 			'live'=>'https://acme-v02.api.letsencrypt.org/directory',
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
-		),$ch=null,$logger=true,$bits,$sha_bits,$directory,$resources,$jwk_header,$kid_header,$account_key,$thumbprint,$nonce=null,$delay_until=null;
+		),$ch=null,$logger=true,$bits,$sha_bits,$directory,$resources,$jwk_header,
+		$kid_header,$account_key,$thumbprint,$nonce=null,$delay_until=null,
+		$psr_rf=null,$psr_cl=null;
 
 	public function __construct($live=true){
 		if (is_bool($live)){ // backwards compatibility to ACMECert v3.1.2 or older
@@ -287,9 +289,14 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		}
 		return $ret;
 	}
-
+	
+	public function setHTTPHandler($cl,$rf){
+		$this->psr_rf=$rf;
+		$this->psr_cl=$cl;
+	}
+	
 	protected function http_request($url,$data=null){
-		if ($this->ch===null) {
+		if ($this->psr_cl===null && $this->ch===null) {
 			if (extension_loaded('curl') && $this->ch=curl_init()) {
 				$this->log('Using cURL');
 			}elseif(ini_get('allow_url_fopen')){
@@ -312,46 +319,77 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
 		$user_agent='ACMECert v3.7.3 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
-		if ($this->ch) {
-			$headers=array();
-			curl_setopt_array($this->ch,array(
-				CURLOPT_URL=>$url,
-				CURLOPT_FOLLOWLOCATION=>true,
-				CURLOPT_RETURNTRANSFER=>true,
-				CURLOPT_TCP_NODELAY=>true,
-				CURLOPT_NOBODY=>$data===false,
-				CURLOPT_USERAGENT=>$user_agent,
-				CURLOPT_CUSTOMREQUEST=>$method,
-				CURLOPT_HTTPHEADER=>$header,
-				CURLOPT_POSTFIELDS=>$data,
-				CURLOPT_HEADERFUNCTION=>static function($ch,$header)use(&$headers){
-					$headers[]=$header;
-					return strlen($header);
-				}
-			));
-			$took=microtime(true);
-			$body=curl_exec($this->ch);
-			$took=round(microtime(true)-$took,2).'s';
-			if ($body===false) throw new Exception('HTTP Request Error: '.curl_error($this->ch));
-		}else{
-			$opts=array(
-				'http'=>array(
-					'header'=>$header,
-					'method'=>$method,
-					'user_agent'=>$user_agent,
-					'ignore_errors'=>true,
-					'timeout'=>60,
-					'content'=>$data
-				)
-			);
-			$took=microtime(true);
-			$body=file_get_contents($url,false,stream_context_create($opts));
-			$took=round(microtime(true)-$took,2).'s';
-			if ($body===false) throw new Exception('HTTP Request Error: '.$this->get_openssl_error());
-			if (PHP_VERSION_ID>=80400){
-				$http_response_header=http_get_last_response_headers();
+		if ($this->psr_cl!==null){
+			
+			$req=$this->psr_rf->createRequest($method,$url);
+			$req=$req->withHeader('User-Agent',$user_agent);
+			
+			foreach($header as $line){
+				list($k,$v)=explode(':',$line,2);
+				$req=$req->withHeader($k,trim($v));
 			}
-			$headers=$http_response_header;
+			
+			if (!empty($header)){
+				$req->getBody()->write($data);
+			}
+			
+			$took=microtime(true);
+			$response=$this->psr_cl->sendRequest($req);
+			$took=round(microtime(true)-$took,2).'s';
+			
+			$body=$response->getBody()->getContents();
+			
+			$headers=array(
+				'HTTP/'.$response->getProtocolVersion().' '.$response->getStatusCode().' '.$response->getReasonPhrase()
+			);
+
+			foreach($response->getHeaders() as $name=>$values){
+				foreach($values as $value){
+					$headers[]=$name.': '.$value;
+				}
+			}
+		}else{
+			if ($this->ch) {
+				$headers=array();
+				curl_setopt_array($this->ch,array(
+					CURLOPT_URL=>$url,
+					CURLOPT_FOLLOWLOCATION=>true,
+					CURLOPT_RETURNTRANSFER=>true,
+					CURLOPT_TCP_NODELAY=>true,
+					CURLOPT_NOBODY=>$data===false,
+					CURLOPT_USERAGENT=>$user_agent,
+					CURLOPT_CUSTOMREQUEST=>$method,
+					CURLOPT_HTTPHEADER=>$header,
+					CURLOPT_POSTFIELDS=>$data,
+					CURLOPT_HEADERFUNCTION=>static function($ch,$header)use(&$headers){
+						$headers[]=$header;
+						return strlen($header);
+					}
+				));
+				$took=microtime(true);
+				$body=curl_exec($this->ch);
+				$took=round(microtime(true)-$took,2).'s';
+				if ($body===false) throw new Exception('HTTP Request Error: '.curl_error($this->ch));
+			}else{
+				$opts=array(
+					'http'=>array(
+						'header'=>$header,
+						'method'=>$method,
+						'user_agent'=>$user_agent,
+						'ignore_errors'=>true,
+						'timeout'=>60,
+						'content'=>$data
+					)
+				);
+				$took=microtime(true);
+				$body=file_get_contents($url,false,stream_context_create($opts));
+				$took=round(microtime(true)-$took,2).'s';
+				if ($body===false) throw new Exception('HTTP Request Error: '.$this->get_openssl_error());
+				if (PHP_VERSION_ID>=80400){
+					$http_response_header=http_get_last_response_headers();
+				}
+				$headers=$http_response_header;
+			}
 		}
 
 		$headers=array_reduce( // parse http response headers into array

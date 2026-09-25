@@ -606,8 +606,30 @@ class ACMECert extends ACMEv2 {
 		return $order;
 	}
 
-	function getDNSPersistRecord($domain){
-		return $this->resources['accountHashPrefix'].'sha-256/'.
+	function getDNSPersistRecord($domain='*',$issuerDomainName=null){
+		if (!$this->resources) $this->readDirectory();
+
+		if (!isset($this->resources['meta']['accountHashPrefix'])){
+			throw new Exception('"accountHashPrefix" missing from directory');
+		}
+
+		if (!$issuerDomainName){
+			if (!isset($this->resources['meta']['issuerDomainNames'])){
+				throw new Exception('"issuerDomainNames" missing from directory');
+			}
+			$issuerDomainName=reset($this->resources['meta']['issuerDomainNames']);
+		}
+
+		$wildcard=false;
+		if (substr($domain,0,2)==='*.'){
+			$wildcard=true;
+			$domain=substr($domain,2);
+		}
+
+		$arr=array(
+			$issuerDomainName,
+			'accounturi='.
+			$this->resources['meta']['accountHashPrefix'].'sha-256/'.
 			$this->base64url(
 				hash(
 					'sha256',
@@ -617,7 +639,15 @@ class ACMECert extends ACMEv2 {
 					$this->getAccountID(),
 					true
 				)
-			);
+			)
+		);
+		if ($wildcard){
+			$arr[]='policy=wildcard';
+		}
+		return array(
+			'_validation-persist.'.$domain,
+			implode('; ',$arr)
+		);
 	}
 
 	private function parse_challenges($authorization,$type,&$url){
@@ -643,17 +673,11 @@ class ACMECert extends ACMEv2 {
 					return array(null,hash('sha256',$this->keyAuthorization($challenge['token'])));
 				break;
 				case 'dns-persist-01':
-					$arr=array(
-						reset($challenge['issuer-domain-names']),
-						'accounturi='.$this->getDNSPersistRecord($authorization['identifier']['value'])
-					);
+					$domain=$authorization['identifier']['value'];
 					if (isset($authorization['wildcard']) && $authorization['wildcard']){
-						$arr[]='policy=wildcard';
+						$domain='*.'.$domain;
 					}
-					return array(
-						'_validation-persist.'.$authorization['identifier']['value'],
-						implode('; ',$arr)
-					);
+					return $this->getDNSPersistRecord($domain,reset($challenge['issuer-domain-names']));
 				break;
 				case 'dns-account-01':
 					return array(

@@ -291,6 +291,12 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 	}
 	
 	public function setHTTPHandler($cl,$rf){
+		if (!($cl instanceof \Psr\Http\Client\ClientInterface)){
+			throw new Exception('setHTTPHandler: First argument must be an instance of \Psr\Http\Client\ClientInterface');
+		}
+		if (!($rf instanceof \Psr\Http\Message\RequestFactoryInterface)){
+			throw new Exception('setHTTPHandler: Second argument must be an instance of \Psr\Http\Message\RequestFactoryInterface');
+		}
 		$this->psr_rf=$rf;
 		$this->psr_cl=$cl;
 	}

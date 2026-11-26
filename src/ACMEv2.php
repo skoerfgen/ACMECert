@@ -384,7 +384,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			$response=$this->psr_client->sendRequest($req);
 			$took=round(microtime(true)-$took,2).'s';
 
-			$body=$response->getBody()->getContents();
+			$body=(string) $response->getBody();
 
 			$headers=array(
 				'HTTP/'.$response->getProtocolVersion().' '.$response->getStatusCode().' '.$response->getReasonPhrase()

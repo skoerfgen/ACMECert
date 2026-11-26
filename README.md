@@ -1,4 +1,4 @@
-# ACMECert v3.7.4
+# ACMECert v3.8.0
 [![ACMECert Test](https://github.com/skoerfgen/ACMECert/actions/workflows/ACMECert.yaml/badge.svg)](https://github.com/skoerfgen/ACMECert/actions/workflows/ACMECert.yaml)
 [![CodeQL](https://github.com/skoerfgen/ACMECert/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/skoerfgen/ACMECert/actions/workflows/github-code-scanning/codeql)
 

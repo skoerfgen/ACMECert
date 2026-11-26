@@ -370,6 +370,13 @@ $settings=array(
 $ac->getCertificateChain(..., ..., ..., $settings);
 ```
 
+#### Set PSR compatible HTTP handler
+```php
+$client=new \GuzzleHttp\Client();
+$factory=new \GuzzleHttp\Psr7\HttpFactory();
+$ac->setHTTPHandler($client,$factory);
+```
+
 ## Logging
 
 By default ACMECert logs its actions using `error_log` which logs messages to stderr in PHP CLI so it is easy to log to a file instead:

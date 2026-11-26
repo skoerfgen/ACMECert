@@ -1087,11 +1087,11 @@ Set custom HTTP handler for ACMECert to use.
 public void ACMECert::setHTTPHandler( \Psr\Http\Client\ClientInterface $client, \Psr\Http\Message\RequestFactoryInterface $factory)
 ```
 ###### Parameters
-> **`clientInterface`**
+> **`client`**
 >
 > A PSR-18 compatible \Psr\Http\Client\ClientInterface instance.
 
-> **`requestFactoryInterface`**
+> **`factory`**
 >
 > A PSR-17 compatible \Psr\Http\Message\RequestFactoryInterfac instance.
 ###### Return Values

@@ -325,36 +325,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
 		$user_agent='ACMECert v3.7.4 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
-		if ($this->psr_client!==null){
-			
-			$req=$this->psr_factory->createRequest($method,$url);
-			$req=$req->withHeader('User-Agent',$user_agent);
-			
-			foreach($header as $line){
-				list($k,$v)=explode(':',$line,2);
-				$req=$req->withHeader($k,trim($v));
-			}
-			
-			if (!empty($header)){
-				$req->getBody()->write($data);
-			}
-			
-			$took=microtime(true);
-			$response=$this->psr_client->sendRequest($req);
-			$took=round(microtime(true)-$took,2).'s';
-			
-			$body=$response->getBody()->getContents();
-			
-			$headers=array(
-				'HTTP/'.$response->getProtocolVersion().' '.$response->getStatusCode().' '.$response->getReasonPhrase()
-			);
-
-			foreach($response->getHeaders() as $name=>$values){
-				foreach($values as $value){
-					$headers[]=$name.': '.$value;
-				}
-			}
-		}else{
+		if ($this->psr_client===null){
 			if ($this->ch) {
 				$headers=array();
 				curl_setopt_array($this->ch,array(
@@ -395,6 +366,34 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 					$http_response_header=http_get_last_response_headers();
 				}
 				$headers=$http_response_header;
+			}
+		}else{
+			$req=$this->psr_factory->createRequest($method,$url);
+			$req=$req->withHeader('User-Agent',$user_agent);
+
+			foreach($header as $line){
+				list($k,$v)=explode(':',$line,2);
+				$req=$req->withHeader($k,trim($v));
+			}
+
+			if (!empty($header)){
+				$req->getBody()->write($data);
+			}
+
+			$took=microtime(true);
+			$response=$this->psr_client->sendRequest($req);
+			$took=round(microtime(true)-$took,2).'s';
+
+			$body=$response->getBody()->getContents();
+
+			$headers=array(
+				'HTTP/'.$response->getProtocolVersion().' '.$response->getStatusCode().' '.$response->getReasonPhrase()
+			);
+
+			foreach($response->getHeaders() as $name=>$values){
+				foreach($values as $value){
+					$headers[]=$name.': '.$value;
+				}
 			}
 		}
 

@@ -1,6 +1,10 @@
-## ACMECert v3.7.4
+## ACMECert v3.8.0
 Changes:
 - added support for PSR-18 HTTP Clients
+
+## ACMECert v3.7.4
+Changes:
+- added support for PSR-18 HTTP Clients (wrong version number - corrected in next release)
 
 ## ACMECert v3.7.3
 Changes:

@@ -1093,7 +1093,7 @@ public void ACMECert::setHTTPHandler( \Psr\Http\Client\ClientInterface $client, 
 
 > **`factory`**
 >
-> A PSR-17 compatible \Psr\Http\Message\RequestFactoryInterfac instance.
+> A PSR-17 compatible \Psr\Http\Message\RequestFactoryInterface instance.
 ###### Return Values
 > No value is returned.
 ###### Errors/Exceptions

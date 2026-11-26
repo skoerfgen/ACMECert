@@ -1079,6 +1079,24 @@ public array ACMECert::getProfiles()
 > Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the profiles.
 
 ---
+### ACMECert::setHTTPHandler
+
+Set custom HTTP handler for ACMECert to use.
+
+```php
+public void ACMECert::setHTTPHandler( \Psr\Http\Client\ClientInterface $client, \Psr\Http\Message\RequestFactoryInterface $factory)
+```
+###### Parameters
+> **`clientInterface`**
+> A PSR-18 compatible \Psr\Http\Client\ClientInterface instance.
+> **`requestFactoryInterface`**
+> A PSR-17 compatible \Psr\Http\Message\RequestFactoryInterfac instance.
+###### Return Values
+> No value is returned.
+###### Errors/Exceptions
+> Throws an `Exception` if the provided PSR interfaces are of wrong type.
+
+---
 
 > MIT License
 >

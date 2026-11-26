@@ -39,7 +39,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			'staging'=>'https://acme-staging-v02.api.letsencrypt.org/directory'
 		),$ch=null,$logger=true,$bits,$sha_bits,$directory,$resources,$jwk_header,
 		$kid_header,$account_key,$thumbprint,$nonce=null,$delay_until=null,
-		$psr_rf=null,$psr_cl=null;
+		$psr_factory=null,$psr_client=null;
 
 	public function __construct($live=true){
 		if (is_bool($live)){ // backwards compatibility to ACMECert v3.1.2 or older
@@ -290,19 +290,19 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		return $ret;
 	}
 	
-	public function setHTTPHandler($cl,$rf){
-		if (!($cl instanceof \Psr\Http\Client\ClientInterface)){
+	public function setHTTPHandler($client,$factory){
+		if (!($client instanceof \Psr\Http\Client\ClientInterface)){
 			throw new Exception('setHTTPHandler: First argument must be an instance of \Psr\Http\Client\ClientInterface');
 		}
-		if (!($rf instanceof \Psr\Http\Message\RequestFactoryInterface)){
+		if (!($factory instanceof \Psr\Http\Message\RequestFactoryInterface)){
 			throw new Exception('setHTTPHandler: Second argument must be an instance of \Psr\Http\Message\RequestFactoryInterface');
 		}
-		$this->psr_rf=$rf;
-		$this->psr_cl=$cl;
+		$this->psr_factory=$factory;
+		$this->psr_client=$client;
 	}
 	
 	protected function http_request($url,$data=null){
-		if ($this->psr_cl===null && $this->ch===null) {
+		if ($this->psr_client===null && $this->ch===null) {
 			if (extension_loaded('curl') && $this->ch=curl_init()) {
 				$this->log('Using cURL');
 			}elseif(ini_get('allow_url_fopen')){
@@ -325,9 +325,9 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 		$method=$data===false?'HEAD':($data===null?'GET':'POST');
 		$user_agent='ACMECert v3.7.3 (+https://github.com/skoerfgen/ACMECert)';
 		$header=($data===null||$data===false)?array():array('Content-Type: application/jose+json');
-		if ($this->psr_cl!==null){
+		if ($this->psr_client!==null){
 			
-			$req=$this->psr_rf->createRequest($method,$url);
+			$req=$this->psr_factory->createRequest($method,$url);
 			$req=$req->withHeader('User-Agent',$user_agent);
 			
 			foreach($header as $line){
@@ -340,7 +340,7 @@ class ACMEv2 { // Communication with Let's Encrypt via ACME v2 protocol
 			}
 			
 			$took=microtime(true);
-			$response=$this->psr_cl->sendRequest($req);
+			$response=$this->psr_client->sendRequest($req);
 			$took=round(microtime(true)-$took,2).'s';
 			
 			$body=$response->getBody()->getContents();

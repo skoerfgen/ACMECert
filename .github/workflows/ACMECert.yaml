@@ -1,7 +1,7 @@
 name: ACMECert Test
 
 on:
-  #workflow_dispatch:
+  workflow_dispatch:
   push:
  
 permissions:

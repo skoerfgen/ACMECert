@@ -1090,8 +1090,8 @@ public void ACMECert::setHTTPHandler( \Psr\Http\Client\ClientInterface $client, 
 > **`clientInterface`**
 >
 > A PSR-18 compatible \Psr\Http\Client\ClientInterface instance.
+
 > **`requestFactoryInterface`**
->
 > A PSR-17 compatible \Psr\Http\Message\RequestFactoryInterfac instance.
 ###### Return Values
 > No value is returned.

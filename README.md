@@ -1,4 +1,4 @@
-# ACMECert v3.7.3
+# ACMECert v3.7.4
 [![ACMECert Test](https://github.com/skoerfgen/ACMECert/actions/workflows/ACMECert.yaml/badge.svg)](https://github.com/skoerfgen/ACMECert/actions/workflows/ACMECert.yaml)
 [![CodeQL](https://github.com/skoerfgen/ACMECert/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/skoerfgen/ACMECert/actions/workflows/github-code-scanning/codeql)
 
@@ -368,6 +368,13 @@ $settings=array(
   'profile'=>'classic'
 );
 $ac->getCertificateChain(..., ..., ..., $settings);
+```
+
+#### Set PSR compatible HTTP handler
+```php
+$client=new \GuzzleHttp\Client();
+$factory=new \GuzzleHttp\Psr7\HttpFactory();
+$ac->setHTTPHandler($client,$factory);
 ```
 
 ## Logging
@@ -1077,6 +1084,27 @@ public array ACMECert::getProfiles()
 > ```
 ###### Errors/Exceptions
 > Throws an `ACME_Exception` if the server responded with an error message or an `Exception` if an other error occurred getting the profiles.
+
+---
+### ACMECert::setHTTPHandler
+
+Set custom HTTP handler for ACMECert to use.
+
+```php
+public void ACMECert::setHTTPHandler( \Psr\Http\Client\ClientInterface $client, \Psr\Http\Message\RequestFactoryInterface $factory)
+```
+###### Parameters
+> **`client`**
+>
+> A PSR-18 compatible \Psr\Http\Client\ClientInterface instance.
+
+> **`factory`**
+>
+> A PSR-17 compatible \Psr\Http\Message\RequestFactoryInterface instance.
+###### Return Values
+> No value is returned.
+###### Errors/Exceptions
+> Throws an `Exception` if the provided PSR interfaces are of wrong type.
 
 ---
 

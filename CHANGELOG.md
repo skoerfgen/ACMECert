@@ -1,3 +1,7 @@
+## ACMECert v3.7.4
+Changes:
+- added support for PSR-18 HTTP Clients
+
 ## ACMECert v3.7.3
 Changes:
 - php 8.5 compatibility

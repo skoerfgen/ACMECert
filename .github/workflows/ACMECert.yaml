@@ -43,7 +43,7 @@ jobs:
     name: PHP ${{ matrix.version }} ${{ matrix.connect }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         
       - name: Replace port 443 with 5001 in alpn_responder.js
         run: sed -i 's/listen(443)/listen(5001)/g' alpn_responder.js
